@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clubs — Jumão BDE</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:sans-serif; display:flex; min-height:100vh; }
+    aside { width:200px; border-right:1px solid #ccc; padding:1rem; font-size:.85rem; }
+    aside h2 { font-size:.95rem; margin-bottom:1rem; }
+    aside span { display:block; padding:.3rem 0; color:#333; }
+    aside span.active { font-weight:bold; }
+    aside hr { margin:.5rem 0; border:none; border-top:1px solid #ccc; }
+    aside .section-title { font-size:.7rem; text-transform:uppercase; color:#999; margin-top:.25rem; }
+    aside .user { margin-top:1rem; font-size:.8rem; border-top:1px solid #ccc; padding-top:.5rem; }
+    .content { flex:1; padding:1.5rem; }
+    h1 { font-size:1.2rem; border-bottom:1px solid #ccc; padding-bottom:.5rem; margin-bottom:1rem; }
+    .toolbar { display:flex; gap:.5rem; margin-bottom:1rem; align-items:center; }
+    .toolbar input { padding:.4rem; border:1px solid #ccc; font-size:.85rem; flex:1; }
+    button { padding:.4rem .8rem; border:1px solid #999; background:#fff; cursor:default; font-size:.8rem; }
+    .clubs { display:flex; gap:1rem; flex-wrap:wrap; }
+    .club-card { border:1px solid #ccc; padding:1rem; width:calc(50% - .5rem); }
+    .club-card h3 { font-size:.95rem; margin-bottom:.25rem; }
+    .club-card p { font-size:.8rem; color:#666; margin-bottom:.5rem; }
+    .club-card .budget { font-size:.8rem; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h2>Jumão BDE</h2>
+    <span>Dashboard</span>
+    <span class="active">Clubs</span>
+    <span>Transactions</span>
+    <span>Remboursements</span>
+    <hr>
+    <div class="section-title">Trésorier</div>
+    <span>Budgets</span>
+    <span>Utilisateurs</span>
+    <div class="user">
+      <span>Jean Dupont</span><br>
+      <small>Trésorier BDE</small><br><br>
+      <span>Déconnexion</span>
+    </div>
+  </aside>
+
+  <div class="content">
+    <h1>Clubs</h1>
+
+    <div class="toolbar">
+      <input type="text" placeholder="Rechercher un club…">
+      <button>+ Nouveau club</button>
+    </div>
+
+    <div class="clubs">
+      <div class="club-card">
+        <h3>Club Robotique</h3>
+        <p>Création de robots pour la coupe de France</p>
+        <div class="budget">Dépenses : 650,00 € / Budget : 1 500,00 € (43%)</div>
+        <p style="margin-top:.5rem;">
+          <button>Détail →</button>
+          <button>Modifier</button>
+        </p>
+      </div>
+      <div class="club-card">
+        <h3>Club Musique</h3>
+        <p>Organisation de concerts et jams</p>
+        <div class="budget">Dépenses : 242,50 € / Budget : 800,00 € (30%)</div>
+        <p style="margin-top:.5rem;">
+          <button>Détail →</button>
+          <button>Modifier</button>
+        </p>
+      </div>
+      <div class="club-card">
+        <h3>Club Photo</h3>
+        <p>Photographie et retouche d'image</p>
+        <div class="budget">Dépenses : 89,00 € / Budget : 600,00 € (15%)</div>
+        <p style="margin-top:.5rem;">
+          <button>Détail →</button>
+          <button>Modifier</button>
+        </p>
+      </div>
+      <div class="club-card">
+        <h3>Club Sport</h3>
+        <p>Tournois inter-promo et événements sportifs</p>
+        <div class="budget">Dépenses : 310,00 € / Budget : 500,00 € (62%)</div>
+        <p style="margin-top:.5rem;">
+          <button>Détail →</button>
+          <button>Modifier</button>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

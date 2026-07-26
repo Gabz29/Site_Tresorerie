@@ -1,0 +1,7 @@
+.env
+/public/uploads/*
+!/public/uploads/.gitkeep
+Notes_Perso.txt
+Plan_Projet_Jumao.xlsx
+~$*
+/.vscode/settings.json

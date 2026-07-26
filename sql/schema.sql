@@ -1,0 +1,2 @@
+-- Schéma MySQL — users, clubs, exercices, budgets, versements, transactions, remboursements, categories.
+-- Voir Ressources/Plan_Projet_Jumao.xlsx, feuille "Schéma BDD".

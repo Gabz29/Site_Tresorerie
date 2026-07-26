@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions — Jumão BDE</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:sans-serif; display:flex; min-height:100vh; }
+    aside { width:200px; border-right:1px solid #ccc; padding:1rem; font-size:.85rem; }
+    aside h2 { font-size:.95rem; margin-bottom:1rem; }
+    aside span { display:block; padding:.3rem 0; color:#333; }
+    aside span.active { font-weight:bold; }
+    aside hr { margin:.5rem 0; border:none; border-top:1px solid #ccc; }
+    aside .section-title { font-size:.7rem; text-transform:uppercase; color:#999; margin-top:.25rem; }
+    aside .user { margin-top:1rem; font-size:.8rem; border-top:1px solid #ccc; padding-top:.5rem; }
+    .content { flex:1; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin-bottom:1rem; }
+    .toolbar { display:flex; gap:.5rem; margin-bottom:.75rem; align-items:center; flex-wrap:wrap; }
+    .toolbar select, .toolbar input { padding:.4rem; border:1px solid #ccc; font-size:.8rem; }
+    button { padding:.4rem .8rem; border:1px solid #999; background:#fff; cursor:default; font-size:.8rem; }
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    th, td { border:1px solid #ccc; padding:.4rem .6rem; text-align:left; }
+    th { background:#f5f5f5; }
+    .pagination { margin-top:.5rem; font-size:.8rem; color:#666; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h2>Jumão BDE</h2>
+    <span>Dashboard</span>
+    <span>Clubs</span>
+    <span class="active">Transactions</span>
+    <span>Remboursements</span>
+    <hr>
+    <div class="section-title">Trésorier</div>
+    <span>Budgets</span>
+    <span>Utilisateurs</span>
+    <div class="user">
+      <span>Jean Dupont</span><br>
+      <small>Trésorier BDE</small><br><br>
+      <span>Déconnexion</span>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h1 style="margin:0;">Transactions</h1>
+      <div style="display:flex; gap:.5rem;">
+        <button>Export CSV</button>
+        <button>+ Nouvelle transaction</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <select><option>Tous les clubs</option><option>Club Robotique</option><option>Club Musique</option><option>Club Photo</option><option>Club Sport</option></select>
+      <select><option>Type : Tous</option><option>Dépense</option><option>Recette</option></select>
+      <select><option>Statut : Tous</option><option>Validé</option><option>En attente</option><option>Refusé</option></select>
+      <input type="text" placeholder="Rechercher…" style="flex:1;">
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Libellé</th><th>Club</th><th>Type</th><th>Montant</th><th>Statut</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>15/10/2025</td><td>Achat composants électroniques</td><td>Club Robotique</td><td>Dépense</td><td>- 320,00 €</td><td>Validé</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+        <tr><td>10/10/2025</td><td>Subvention BDE Q3</td><td>Club Musique</td><td>Recette</td><td>+ 400,00 €</td><td>Validé</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+        <tr><td>08/10/2025</td><td>Cordes de guitare x10</td><td>Club Musique</td><td>Dépense</td><td>- 85,00 €</td><td>Validé</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+        <tr><td>03/10/2025</td><td>Capteurs ultrason</td><td>Club Robotique</td><td>Dépense</td><td>- 156,00 €</td><td>En attente</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+        <tr><td>28/09/2025</td><td>Impression affiches</td><td>Club Robotique</td><td>Dépense</td><td>- 45,00 €</td><td>Validé</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+        <tr><td>20/09/2025</td><td>Appareil photo reflex</td><td>Club Photo</td><td>Dépense</td><td>- 89,00 €</td><td>Refusé</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+        <tr><td>15/09/2025</td><td>Subvention BDE Q2</td><td>Club Robotique</td><td>Recette</td><td>+ 750,00 €</td><td>Validé</td><td><button>Éditer</button> <button>Suppr.</button></td></tr>
+      </tbody>
+    </table>
+
+    <div class="pagination">1–7 sur 7 | <button disabled>← Préc.</button> <button disabled>Suiv. →</button></div>
+  </div>
+</body>
+</html>

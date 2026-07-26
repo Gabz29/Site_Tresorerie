@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remboursements — Jumão BDE</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:sans-serif; display:flex; min-height:100vh; }
+    aside { width:200px; border-right:1px solid #ccc; padding:1rem; font-size:.85rem; }
+    aside h2 { font-size:.95rem; margin-bottom:1rem; }
+    aside span { display:block; padding:.3rem 0; color:#333; }
+    aside span.active { font-weight:bold; }
+    aside hr { margin:.5rem 0; border:none; border-top:1px solid #ccc; }
+    aside .section-title { font-size:.7rem; text-transform:uppercase; color:#999; margin-top:.25rem; }
+    aside .user { margin-top:1rem; font-size:.8rem; border-top:1px solid #ccc; padding-top:.5rem; }
+    .content { flex:1; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin-bottom:1rem; }
+    button { padding:.4rem .8rem; border:1px solid #999; background:#fff; cursor:default; font-size:.8rem; }
+    .filters { display:flex; gap:.5rem; margin-bottom:1rem; }
+    .filters button.active { font-weight:bold; background:#eee; }
+    .remb { border:1px solid #ccc; padding:1rem; margin-bottom:.75rem; font-size:.85rem; }
+    .remb h3 { font-size:.9rem; margin-bottom:.25rem; }
+    .remb .meta { font-size:.8rem; color:#666; }
+    .remb .note { font-size:.8rem; color:#555; font-style:italic; margin-top:.35rem; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h2>Jumão BDE</h2>
+    <span>Dashboard</span>
+    <span>Clubs</span>
+    <span>Transactions</span>
+    <span class="active">Remboursements</span>
+    <hr>
+    <div class="section-title">Trésorier</div>
+    <span>Budgets</span>
+    <span>Utilisateurs</span>
+    <div class="user">
+      <span>Jean Dupont</span><br>
+      <small>Trésorier BDE</small><br><br>
+      <span>Déconnexion</span>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h1 style="margin:0;">Remboursements</h1>
+      <button>+ Nouvelle demande</button>
+    </div>
+
+    <div class="filters">
+      <button class="active">Toutes</button>
+      <button>En attente</button>
+      <button>Validées</button>
+      <button>Refusées</button>
+      <button>Remboursées</button>
+    </div>
+
+    <div class="remb">
+      <div style="display:flex; justify-content:space-between;">
+        <div>
+          <h3>Achat de câbles et connecteurs pour le robot</h3>
+          <div class="meta">[En attente] — 10/10/2025 — Sophie Martin — Club Robotique</div>
+        </div>
+        <div style="text-align:right;">
+          <strong>78,50 €</strong><br>
+          <button style="margin-top:.25rem;">Traiter →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="remb">
+      <div style="display:flex; justify-content:space-between;">
+        <div>
+          <h3>Câbles jack 6.35mm x3</h3>
+          <div class="meta">[Validé] — 05/10/2025 — Lucas Bernard — Club Musique</div>
+          <div class="note">"Validé — justificatif reçu"</div>
+        </div>
+        <div style="text-align:right;">
+          <strong>32,90 €</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="remb">
+      <div style="display:flex; justify-content:space-between;">
+        <div>
+          <h3>Carte mémoire SD 128Go</h3>
+          <div class="meta">[Refusé] — 20/09/2025 — Emma Petit — Club Photo</div>
+          <div class="note">"Hors budget — dépasse le plafond autorisé"</div>
+        </div>
+        <div style="text-align:right;">
+          <strong>155,00 €</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="remb">
+      <div style="display:flex; justify-content:space-between;">
+        <div>
+          <h3>Impression de plans techniques A3</h3>
+          <div class="meta">[Remboursé] — 15/09/2025 — Sophie Martin — Club Robotique</div>
+        </div>
+        <div style="text-align:right;">
+          <strong>45,00 €</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="remb">
+      <div style="display:flex; justify-content:space-between;">
+        <div>
+          <h3>Arbitrage tournoi de badminton</h3>
+          <div class="meta">[En attente] — 01/09/2025 — Tom Leroy — Club Sport</div>
+        </div>
+        <div style="text-align:right;">
+          <strong>120,00 €</strong><br>
+          <button style="margin-top:.25rem;">Traiter →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

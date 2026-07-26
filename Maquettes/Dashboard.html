@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Jumão BDE</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:sans-serif; display:flex; min-height:100vh; }
+    aside { width:200px; border-right:1px solid #ccc; padding:1rem; font-size:.85rem; }
+    aside h2 { font-size:.95rem; margin-bottom:1rem; }
+    aside span { display:block; padding:.3rem 0; color:#333; }
+    aside span.active { font-weight:bold; }
+    aside hr { margin:.5rem 0; border:none; border-top:1px solid #ccc; }
+    aside .section-title { font-size:.7rem; text-transform:uppercase; color:#999; margin-top:.25rem; }
+    aside .user { margin-top:1rem; font-size:.8rem; border-top:1px solid #ccc; padding-top:.5rem; }
+    .content { flex:1; padding:1.5rem; }
+    h1 { font-size:1.2rem; border-bottom:1px solid #ccc; padding-bottom:.5rem; margin-bottom:1rem; }
+    .cards { display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .card { border:1px solid #ccc; padding:1rem; flex:1; min-width:140px; }
+    .card .label { font-size:.75rem; color:#666; }
+    .card .value { font-size:1.3rem; font-weight:bold; margin-top:.25rem; }
+    .placeholder { border:1px dashed #ccc; padding:2rem; text-align:center; color:#999; font-size:.85rem; margin-bottom:1.5rem; }
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    th, td { border:1px solid #ccc; padding:.4rem .6rem; text-align:left; }
+    th { background:#f5f5f5; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h2>Jumão BDE</h2>
+    <span class="active">Dashboard</span>
+    <span>Clubs</span>
+    <span>Transactions</span>
+    <span>Remboursements</span>
+    <hr>
+    <div class="section-title">Trésorier</div>
+    <span>Budgets</span>
+    <span>Utilisateurs</span>
+    <div class="user">
+      <span>Jean Dupont</span><br>
+      <small>Trésorier BDE</small><br><br>
+      <span>Déconnexion</span>
+    </div>
+  </aside>
+
+  <div class="content">
+    <h1>Bonjour, Jean — Exercice 2025/2026</h1>
+
+    <div class="cards">
+      <div class="card">
+        <div class="label">Budget total</div>
+        <div class="value">2 300,00 €</div>
+      </div>
+      <div class="card">
+        <div class="label">Dépenses</div>
+        <div class="value">892,50 €</div>
+      </div>
+      <div class="card">
+        <div class="label">Solde restant</div>
+        <div class="value">1 407,50 €</div>
+      </div>
+      <div class="card">
+        <div class="label">Remboursements en attente</div>
+        <div class="value">3</div>
+      </div>
+    </div>
+
+    <div class="placeholder">[Graphique : Dépenses mensuelles]</div>
+    <div class="placeholder">[Graphique : Budget vs Dépenses par club]</div>
+
+    <h2 style="font-size:1rem; margin-bottom:.5rem;">Dernières transactions</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Libellé</th><th>Club</th><th>Montant</th><th>Statut</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>15/10/2025</td><td>Achat composants électroniques</td><td>Club Robotique</td><td>- 320,00 €</td><td>Validé</td></tr>
+        <tr><td>10/10/2025</td><td>Subvention BDE Q3</td><td>Club Musique</td><td>+ 400,00 €</td><td>Validé</td></tr>
+        <tr><td>08/10/2025</td><td>Cordes de guitare x10</td><td>Club Musique</td><td>- 85,00 €</td><td>Validé</td></tr>
+        <tr><td>03/10/2025</td><td>Capteurs ultrason</td><td>Club Robotique</td><td>- 156,00 €</td><td>En attente</td></tr>
+        <tr><td>28/09/2025</td><td>Impression affiches</td><td>Club Robotique</td><td>- 45,00 €</td><td>Validé</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

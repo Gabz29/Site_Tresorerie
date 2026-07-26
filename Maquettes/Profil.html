@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon profil — Jumão BDE</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:sans-serif; display:flex; min-height:100vh; }
+    aside { width:200px; border-right:1px solid #ccc; padding:1rem; font-size:.85rem; }
+    aside h2 { font-size:.95rem; margin-bottom:1rem; }
+    aside span { display:block; padding:.3rem 0; color:#333; }
+    aside span.active { font-weight:bold; }
+    aside hr { margin:.5rem 0; border:none; border-top:1px solid #ccc; }
+    aside .section-title { font-size:.7rem; text-transform:uppercase; color:#999; margin-top:.25rem; }
+    aside .user { margin-top:1rem; font-size:.8rem; border-top:1px solid #ccc; padding-top:.5rem; }
+    .content { flex:1; padding:1.5rem; max-width:500px; }
+    h1 { font-size:1.2rem; border-bottom:1px solid #ccc; padding-bottom:.5rem; margin-bottom:1rem; }
+    .section { border:1px solid #ccc; padding:1rem; margin-bottom:1rem; }
+    .section h2 { font-size:1rem; margin-bottom:.75rem; }
+    label { font-size:.85rem; display:block; margin-top:.5rem; }
+    input { padding:.4rem; border:1px solid #ccc; font-size:.85rem; width:100%; margin-top:.25rem; }
+    input:disabled { background:#f5f5f5; color:#999; }
+    button { padding:.4rem .8rem; border:1px solid #999; background:#fff; cursor:default; font-size:.8rem; margin-top:.75rem; }
+    .small { font-size:.75rem; color:#666; margin-top:.25rem; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h2>Jumão BDE</h2>
+    <span>Dashboard</span>
+    <span>Clubs</span>
+    <span>Transactions</span>
+    <span>Remboursements</span>
+    <hr>
+    <div class="section-title">Trésorier</div>
+    <span>Budgets</span>
+    <span>Utilisateurs</span>
+    <div class="user">
+      <span class="active">Jean Dupont</span><br>
+      <small>Trésorier BDE</small><br><br>
+      <span>Déconnexion</span>
+    </div>
+  </aside>
+
+  <div class="content">
+    <h1>Mon profil</h1>
+
+    <div class="section">
+      <p><strong>Jean Dupont</strong> — @adminbde — Trésorier BDE</p>
+    </div>
+
+    <div class="section">
+      <h2>Informations personnelles</h2>
+
+      <label>Prénom
+        <input type="text" value="Jean">
+      </label>
+
+      <label>Nom
+        <input type="text" value="Dupont">
+      </label>
+
+      <label>Email
+        <input type="email" value="jean.dupont@isen.fr">
+      </label>
+
+      <label>Identifiant
+        <input type="text" value="adminbde" disabled>
+      </label>
+      <p class="small">L'identifiant ne peut pas être modifié.</p>
+
+      <button>Enregistrer les modifications</button>
+    </div>
+
+    <div class="section">
+      <h2>Changer le mot de passe</h2>
+
+      <label>Mot de passe actuel
+        <input type="password" placeholder="••••••••">
+      </label>
+
+      <label>Nouveau mot de passe
+        <input type="password" placeholder="••••••••">
+      </label>
+
+      <label>Confirmer le nouveau mot de passe
+        <input type="password" placeholder="••••••••">
+      </label>
+
+      <button>Changer le mot de passe</button>
+    </div>
+
+    <div class="section">
+      <h2>Déconnexion</h2>
+      <p style="font-size:.85rem; margin-bottom:.5rem;">Vous serez redirigé vers la page de connexion.</p>
+      <button>Se déconnecter</button>
+    </div>
+  </div>
+</body>
+</html>
