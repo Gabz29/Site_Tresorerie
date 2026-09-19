@@ -1,2 +1,167 @@
--- Schéma MySQL — users, clubs, exercices, budgets, versements, transactions, remboursements, categories.
--- Voir Ressources/Plan_Projet_Jumao.xlsx, feuille "Schéma BDD".
+-- ============================================================================
+--  BASE DE DONNÉES — JUMÃO (Trésorerie BDE ISEN)
+--  SGBD cible : MySQL 8+  /  À importer via phpMyAdmin
+--  Encodage   : UTF-8 (utf8mb4) pour gérer accents et emojis
+--
+--  Ordre de création : les tables "parentes" (sans dépendance) d'abord,
+--  puis les tables qui les référencent. On termine par la FK circulaire
+--  reimbursements <-> transactions, ajoutée en ALTER à la fin.
+-- ============================================================================
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;   -- désactive temporairement pour l'import
+
+-- ============================================================================
+--  1. CATEGORIES  (aucune dépendance)
+-- ============================================================================
+CREATE TABLE categories (
+  CategoryID   INT           NOT NULL AUTO_INCREMENT,
+  Name         VARCHAR(50)   NOT NULL,
+  Type         VARCHAR(10)   NOT NULL,          -- 'depense' | 'recette' | 'both'
+  CONSTRAINT categories_PK PRIMARY KEY (CategoryID),
+  CONSTRAINT categories_Name_UQ UNIQUE (Name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  2. CLUBS  (le BDE lui-même est enregistré comme un club particulier)
+-- ============================================================================
+CREATE TABLE clubs (
+  ClubID       INT           NOT NULL AUTO_INCREMENT,
+  Name         VARCHAR(50)   NOT NULL,
+  Description  TEXT          NULL,              -- optionnel
+  IsActive     TINYINT(1)    NOT NULL DEFAULT 1,-- 1=actif, 0=archivé/dissous
+  CONSTRAINT clubs_PK PRIMARY KEY (ClubID),
+  CONSTRAINT clubs_Name_UQ UNIQUE (Name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  3. FISCALYEAR  (exercices budgétaires : septembre N -> août N+1)
+-- ============================================================================
+CREATE TABLE fiscalyear (
+  FiscalYearID INT           NOT NULL AUTO_INCREMENT,
+  Year         VARCHAR(10)   NOT NULL,          -- ex: '2024-2025'
+  Start_Date   DATE          NOT NULL,          -- sert à rattacher une transaction
+  End_Date     DATE          NOT NULL,          --   à l'exercice via sa date
+  IsActive     TINYINT(1)    NOT NULL DEFAULT 0,-- un seul exercice actif à la fois
+  CONSTRAINT fiscalyear_PK PRIMARY KEY (FiscalYearID),
+  CONSTRAINT fiscalyear_Year_UQ UNIQUE (Year)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  4. USERS  (un utilisateur gère 0 ou 1 club -> ClubID nullable)
+-- ============================================================================
+CREATE TABLE users (
+  UserID       INT           NOT NULL AUTO_INCREMENT,
+  Username     VARCHAR(50)   NOT NULL,
+  Password     VARCHAR(250)  NOT NULL,          -- haché avec password_hash()
+  Role         VARCHAR(20)   NOT NULL,          -- 'tresorier' | 'responsable' | 'admin'
+  LastName     VARCHAR(50)   NOT NULL,
+  FirstName    VARCHAR(50)   NOT NULL,
+  Email        VARCHAR(250)  NULL,              -- optionnel
+  Created_At   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ClubID       INT           NULL,              -- 0 ou 1 club géré
+  CONSTRAINT users_PK PRIMARY KEY (UserID),
+  CONSTRAINT users_Username_UQ UNIQUE (Username),
+  CONSTRAINT users_ClubID_FK FOREIGN KEY (ClubID) REFERENCES clubs (ClubID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  5. BUDGETS  (enveloppe annuelle prévue ; 1 seul par club et par exercice)
+-- ============================================================================
+CREATE TABLE budgets (
+  BudgetID           INT           NOT NULL AUTO_INCREMENT,
+  Planned_Amount     DECIMAL(10,2) NOT NULL,    -- prévision de début d'année
+  Disbursement_Count INT           NOT NULL DEFAULT 2, -- 2 clubs / 4 BDE
+  Notes              TEXT          NULL,         -- optionnel
+  ClubID             INT           NOT NULL,
+  FiscalYearID       INT           NOT NULL,
+  CONSTRAINT budgets_PK PRIMARY KEY (BudgetID),
+  CONSTRAINT budgets_ClubID_FK       FOREIGN KEY (ClubID)       REFERENCES clubs (ClubID),
+  CONSTRAINT budgets_FiscalYearID_FK FOREIGN KEY (FiscalYearID) REFERENCES fiscalyear (FiscalYearID),
+  -- Garantit qu'un club n'a qu'UN SEUL budget par exercice :
+  CONSTRAINT budgets_Club_Year_UQ UNIQUE (ClubID, FiscalYearID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  6. DISBURSEMENTS  (tranches de versement ; réel NULL tant que non reçu)
+-- ============================================================================
+CREATE TABLE disbursements (
+  DisbursementID INT           NOT NULL AUTO_INCREMENT,
+  Number         INT           NOT NULL,        -- n° de tranche : 1,2,3,4
+  Planned_Amount DECIMAL(10,2) NOT NULL,        -- prévu pour cette tranche
+  Actual_Amount  DECIMAL(10,2) NULL,            -- reçu (NULL si pas encore versé)
+  Planned_Date   DATE          NOT NULL,
+  Actual_Date    DATE          NULL,            -- NULL tant que pas reçu
+  Status         VARCHAR(20)   NOT NULL DEFAULT 'prevu', -- 'prevu' | 'recu'
+  BudgetID       INT           NOT NULL,
+  CONSTRAINT disbursements_PK PRIMARY KEY (DisbursementID),
+  CONSTRAINT disbursements_BudgetID_FK FOREIGN KEY (BudgetID) REFERENCES budgets (BudgetID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  7. TRANSACTIONS  (dépenses et recettes ; table centrale)
+--     NB : la FK vers reimbursements est ajoutée plus bas (ALTER), car les
+--     deux tables se référencent mutuellement.
+-- ============================================================================
+CREATE TABLE transactions (
+  TransactionID  INT           NOT NULL AUTO_INCREMENT,
+  Type           VARCHAR(10)   NOT NULL,        -- 'depense' | 'recette'
+  Amount         DECIMAL(10,2) NOT NULL,        -- DECIMAL, jamais INT/FLOAT !
+  Date           DATE          NOT NULL,
+  Description    VARCHAR(255)  NOT NULL,
+  Payment_Method VARCHAR(20)   NULL,            -- virement|carte|especes|cheque
+  Status         VARCHAR(20)   NOT NULL DEFAULT 'valide',
+  Receipt        VARCHAR(250)  NULL,            -- fichier justificatif (optionnel)
+  Notes          TEXT          NULL,            -- optionnel
+  Created_At     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CategoryID     INT           NULL,
+  FiscalYearID   INT           NOT NULL,
+  UserID         INT           NOT NULL,        -- créateur de la ligne
+  ClubID         INT           NOT NULL,        -- BDE = un club
+  CONSTRAINT transactions_PK PRIMARY KEY (TransactionID),
+  CONSTRAINT transactions_CategoryID_FK   FOREIGN KEY (CategoryID)   REFERENCES categories (CategoryID),
+  CONSTRAINT transactions_FiscalYearID_FK FOREIGN KEY (FiscalYearID) REFERENCES fiscalyear (FiscalYearID),
+  CONSTRAINT transactions_UserID_FK       FOREIGN KEY (UserID)       REFERENCES users (UserID),
+  CONSTRAINT transactions_ClubID_FK       FOREIGN KEY (ClubID)       REFERENCES clubs (ClubID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+--  8. REIMBURSEMENTS  (demandes de remboursement)
+--     - saisi par un membre du bureau (UserID)
+--     - bénéficiaire = qui a avancé l'argent (texte libre, peut ne pas avoir de compte)
+--     - TransactionID (nullable) = transaction générée une fois remboursé  [option B]
+-- ============================================================================
+CREATE TABLE reimbursements (
+  ReimbursementID       INT           NOT NULL AUTO_INCREMENT,
+  Amount                DECIMAL(10,2) NOT NULL,
+  Purchase_Date         DATE          NOT NULL, -- date de l'achat avancé
+  Description           VARCHAR(250)  NOT NULL,
+  Status                VARCHAR(20)   NOT NULL DEFAULT 'en_attente', -- en_attente|valide|refuse|rembourse
+  Treasurer_Notes       TEXT          NULL,     -- optionnel
+  Validation_Date       DATETIME      NULL,     -- NULL tant que pas traité
+  Beneficiary_FirstName VARCHAR(50)   NOT NULL, -- qui a avancé l'argent
+  Beneficiary_LastName  VARCHAR(100)  NOT NULL,
+  Beneficiary_Email     VARCHAR(250)  NULL,
+  UserID                INT           NOT NULL, -- qui a saisi la demande
+  ClubID                INT           NOT NULL,
+  FiscalYearID          INT           NOT NULL,
+  CategoryID            INT           NULL,
+  TransactionID         INT           NULL,     -- [option B] généré si remboursé
+  CONSTRAINT reimbursements_PK PRIMARY KEY (ReimbursementID),
+  CONSTRAINT reimbursements_UserID_FK        FOREIGN KEY (UserID)        REFERENCES users (UserID),
+  CONSTRAINT reimbursements_ClubID_FK        FOREIGN KEY (ClubID)        REFERENCES clubs (ClubID),
+  CONSTRAINT reimbursements_FiscalYearID_FK  FOREIGN KEY (FiscalYearID)  REFERENCES fiscalyear (FiscalYearID),
+  CONSTRAINT reimbursements_CategoryID_FK    FOREIGN KEY (CategoryID)    REFERENCES categories (CategoryID),
+  CONSTRAINT reimbursements_TransactionID_FK FOREIGN KEY (TransactionID) REFERENCES transactions (TransactionID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;   -- réactive les vérifications
+
+-- ============================================================================
+--  FIN DU SCHÉMA
+--  Rappels de logique métier gérés côté PHP (pas au niveau BDD) :
+--   - Type/Status : valeurs contrôlées dans le code (ou passer en ENUM plus tard)
+--   - Un budget doit avoir exactement Disbursement_Count lignes dans disbursements
+--   - La transaction générée par un remboursement reprend le ClubID du remboursement
+--   - L'exercice d'une transaction est déduit de sa Date (Start_Date <= Date <= End_Date)
+-- ============================================================================

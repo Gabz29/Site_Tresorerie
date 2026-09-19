@@ -1,1 +1,150 @@
-/* Styles de l'application — à reprendre depuis Maquettes/Style_Site_BDE.css */
+/* ==========================================================================
+   JUMÃO — feuille de style
+
+   ÉTAT : version minimale de la Phase 2, juste assez pour que les pages
+   soient lisibles. La reprise des maquettes (Maquettes/Style_Site_BDE.css :
+   couleurs, composants, responsive) est le travail de la Phase 3 (3.2).
+   ========================================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex;
+  min-height: 100vh;
+  color: #222;
+  background: #fff;
+}
+
+/* --------------------------------------------------------- Navigation --- */
+
+.sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  border-right: 1px solid #ccc;
+  padding: 1rem;
+  font-size: .85rem;
+}
+
+.sidebar h2 {
+  font-size: .95rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar nav a,
+.sidebar nav span {
+  display: block;
+  padding: .3rem 0;
+}
+
+.sidebar nav a {
+  color: #1a4f8a;
+  text-decoration: none;
+}
+
+.sidebar nav a:hover {
+  text-decoration: underline;
+}
+
+.sidebar nav a.actif {
+  font-weight: 700;
+}
+
+/* Entrées de menu dont la page n'existe pas encore : visibles pour montrer
+   la structure à venir, mais clairement inactives. */
+.sidebar nav .inactif {
+  color: #999;
+}
+
+.sidebar hr {
+  margin: .6rem 0;
+  border: none;
+  border-top: 1px solid #ccc;
+}
+
+.sidebar .section-titre {
+  font-size: .7rem;
+  text-transform: uppercase;
+  color: #999;
+  margin-top: .25rem;
+}
+
+/* ------------------------------------------------------------ Contenu --- */
+
+.contenu {
+  flex: 1;
+  padding: 1.5rem;
+  min-width: 0;
+}
+
+.contenu h1 {
+  font-size: 1.2rem;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: .5rem;
+  margin-bottom: 1rem;
+}
+
+.compteur,
+.vide {
+  font-size: .85rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+/* ------------------------------------------------------ Liste de clubs --- */
+
+.liste-clubs {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.club {
+  border: 1px solid #ccc;
+  padding: 1rem;
+}
+
+.club-nom {
+  font-size: .95rem;
+  margin-bottom: .25rem;
+}
+
+.club-description {
+  font-size: .8rem;
+  color: #666;
+}
+
+/* -------------------------------------------------------------- Erreur --- */
+
+.erreur {
+  padding: 2rem;
+}
+
+.erreur h1 {
+  font-size: 1.2rem;
+  margin-bottom: .5rem;
+}
+
+.erreur p {
+  font-size: .9rem;
+  margin-bottom: .5rem;
+}
+
+/* ------------------------------------------------------------- Mobile --- */
+
+@media (max-width: 640px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+  }
+}
