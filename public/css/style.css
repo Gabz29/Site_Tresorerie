@@ -73,6 +73,43 @@ body {
   margin-top: .25rem;
 }
 
+/* La barre latérale devient une colonne : le bloc utilisateur est poussé
+   en bas, quelle que soit la longueur du menu. */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar nav {
+  flex: 1;
+}
+
+.utilisateur {
+  border-top: 1px solid #ccc;
+  padding-top: .6rem;
+  margin-top: 1rem;
+  font-size: .8rem;
+}
+
+.utilisateur-nom {
+  font-weight: 600;
+}
+
+.utilisateur-role {
+  color: #666;
+  font-size: .75rem;
+  margin-bottom: .5rem;
+}
+
+.deconnexion {
+  color: #1a4f8a;
+  text-decoration: none;
+}
+
+.deconnexion:hover {
+  text-decoration: underline;
+}
+
 /* ------------------------------------------------------------ Contenu --- */
 
 .contenu {
@@ -117,6 +154,72 @@ body {
 .club-description {
   font-size: .8rem;
   color: #666;
+}
+
+/* --------------------------------------------------------- Connexion --- */
+
+/* La page de connexion n'a pas de barre latérale : on annule la mise en
+   page en deux colonnes du body et on centre le formulaire. */
+body.page-login {
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login {
+  border: 1px solid #ccc;
+  padding: 2rem;
+  width: 100%;
+  max-width: 340px;
+}
+
+.login h1 {
+  font-size: 1.1rem;
+  margin-bottom: .25rem;
+}
+
+.login-sous-titre {
+  font-size: .8rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.login-erreur {
+  font-size: .8rem;
+  color: #8a1a1a;
+  background: #fdf0f0;
+  border: 1px solid #e0b4b4;
+  padding: .5rem .6rem;
+  margin-bottom: 1rem;
+}
+
+.login label {
+  display: block;
+  font-size: .85rem;
+  margin-top: .75rem;
+}
+
+.login input {
+  width: 100%;
+  padding: .4rem;
+  margin-top: .25rem;
+  border: 1px solid #ccc;
+  font-size: .85rem;
+}
+
+.login .btn {
+  display: block;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: .5rem;
+  border: 1px solid #999;
+  background: #fff;
+  font-size: .85rem;
+  cursor: pointer;
+}
+
+.login .btn:hover {
+  background: #f2f2f2;
 }
 
 /* -------------------------------------------------------------- Erreur --- */

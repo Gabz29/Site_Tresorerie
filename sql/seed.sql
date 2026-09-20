@@ -79,6 +79,8 @@ INSERT INTO fiscalyear (FiscalYearID, `Year`, Start_Date, End_Date, IsActive) VA
 -- ============================================================================
 --  4. USERS — les 3 rôles du projet
 --
+--  IDENTIFIANT DE CONNEXION = l'EMAIL (il n'y a pas de "username").
+--
 --  MOT DE PASSE : les trois comptes ont le mot de passe  password123
 --  Ce qui est stocké n'est PAS le mot de passe mais son EMPREINTE (hash
 --  bcrypt), calculée avec password_hash(). Un fichier .sql ne pouvant pas
@@ -91,16 +93,22 @@ INSERT INTO fiscalyear (FiscalYearID, `Year`, Start_Date, End_Date, IsActive) VA
 --
 --  ClubID : le club géré par l'utilisateur (NULL si aucun).
 -- ============================================================================
-INSERT INTO users (UserID, Username, Password, Role, LastName, FirstName, Email, ClubID) VALUES
-  (1, 'tresorier',
+--  Le compte nº4 est volontairement DÉSACTIVÉ (IsActive = 0) : c'est
+--  l'ancien trésorier, dont les transactions restent en base. Il sert de cas
+--  de test — s'il parvient à se connecter, c'est que le filtre manque.
+INSERT INTO users (UserID, Email, Password, Role, LastName, FirstName, IsActive, ClubID) VALUES
+  (1, 'jean.dupont@isen-ouest.yncrea.fr',
       '$2y$10$Ye8IARnb0Wm09ynt68U6IuEbXj21edV7UbYOSqM8dxGzivXXmBYBa',
-      'tresorier',   'Dupont', 'Jean',    'jean.dupont@isen-ouest.yncrea.fr',    1),
-  (2, 'resp.robotique',
+      'tresorier',   'Dupont',  'Jean',    1,    1),
+  (2, 'camille.martin@isen-ouest.yncrea.fr',
       '$2y$10$WdpQOvDj4CCxY.WXK7KFBuSjbAqy89/wI1ulqKnksQHBf71t4JAza',
-      'responsable', 'Martin', 'Camille', 'camille.martin@isen-ouest.yncrea.fr', 2),
-  (3, 'admin',
+      'responsable', 'Martin',  'Camille', 1,    2),
+  (3, 'alex.bernard@isen-ouest.yncrea.fr',
       '$2y$10$aIjirT1moU83qLglTPTx/uiSzXFXGlft2XIM7KSLgQQITl1MyOoaW',
-      'admin',       'Bernard','Alex',    'alex.bernard@isen-ouest.yncrea.fr', NULL);
+      'admin',       'Bernard', 'Alex',    1, NULL),
+  (4, 'paul.ancien@isen-ouest.yncrea.fr',
+      '$2y$10$Ye8IARnb0Wm09ynt68U6IuEbXj21edV7UbYOSqM8dxGzivXXmBYBa',
+      'tresorier',   'Ancien',  'Paul',    0,    1);   -- bureau précédent
 
 -- ============================================================================
 --  5. BUDGETS — enveloppe prévisionnelle, 1 par club et par exercice
@@ -189,7 +197,11 @@ SET FOREIGN_KEY_CHECKS = 1;   -- réactive les vérifications
 --    9 catégories
 --    6 clubs (dont 1 archivé, pour tester le filtre IsActive)
 --    2 exercices (2026-2027 actif)
---    3 utilisateurs — mot de passe : password123
+--    4 utilisateurs — connexion par EMAIL, mot de passe : password123
+--      jean.dupont@isen-ouest.yncrea.fr     (tresorier)
+--      camille.martin@isen-ouest.yncrea.fr  (responsable, club Robotique)
+--      alex.bernard@isen-ouest.yncrea.fr    (admin)
+--      paul.ancien@isen-ouest.yncrea.fr     (DÉSACTIVÉ — doit être refusé)
 --    5 budgets sur l'exercice en cours
 --   12 tranches de versement (5 reçues, 7 prévues)
 --    8 transactions

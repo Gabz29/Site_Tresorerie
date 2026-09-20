@@ -51,6 +51,35 @@ $titre = $titre ?? 'Jumão';
     <span class="inactif">Budgets</span>
     <span class="inactif">Utilisateurs</span>
   </nav>
+
+  <?php
+  /*
+   * Bloc de l'utilisateur connecté.
+   *
+   * utilisateur_courant() lit la SESSION, pas la base : ces informations y
+   * ont été déposées au moment de la connexion. Inutile d'interroger MySQL
+   * à chaque page pour réafficher un prénom.
+   *
+   * htmlspecialchars() s'applique ici aussi : ces valeurs viennent de la
+   * base (donc, à terme, d'un formulaire), même si elles transitent par la
+   * session. La règle ne souffre pas d'exception.
+   *
+   * Les entrées de menu réservées à certains rôles seront masquées ici
+   * quand les pages correspondantes existeront (tâches 2.6 et 2.10).
+   */
+  $utilisateur = utilisateur_courant();
+  ?>
+  <?php if ($utilisateur !== null) : ?>
+    <div class="utilisateur">
+      <div class="utilisateur-nom">
+        <?= htmlspecialchars($utilisateur['prenom'] . ' ' . $utilisateur['nom']) ?>
+      </div>
+      <div class="utilisateur-role">
+        <?= htmlspecialchars(libelle_role($utilisateur['role'])) ?>
+      </div>
+      <a class="deconnexion" href="<?= BASE_URL ?>/index.php?page=logout">Déconnexion</a>
+    </div>
+  <?php endif; ?>
 </aside>
 
 <main class="contenu">

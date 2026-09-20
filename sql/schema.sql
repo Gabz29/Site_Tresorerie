@@ -50,18 +50,30 @@ CREATE TABLE fiscalyear (
 -- ============================================================================
 --  4. USERS  (un utilisateur gère 0 ou 1 club -> ClubID nullable)
 -- ============================================================================
+--     L'EMAIL SERT D'IDENTIFIANT DE CONNEXION (il n'y a pas de "username") :
+--     une adresse de moins à retenir pour les membres du bureau, unicité
+--     naturelle, et c'est la seule façon d'envisager plus tard une
+--     réinitialisation de mot de passe par mail. Il est donc NOT NULL et
+--     UNIQUE, alors qu'il était optionnel dans la première version.
+--
+--     IsActive : le bureau change chaque année. On ne peut PAS supprimer le
+--     compte d'un ancien membre — les transactions qu'il a saisies pointent
+--     vers son UserID par une clé étrangère, et l'effacer détruirait
+--     l'historique comptable, qui est précisément ce que l'application doit
+--     conserver. On DÉSACTIVE donc le compte : il garde ses liens, mais ne
+--     permet plus de se connecter.
 CREATE TABLE users (
   UserID       INT           NOT NULL AUTO_INCREMENT,
-  Username     VARCHAR(50)   NOT NULL,
+  Email        VARCHAR(250)  NOT NULL,          -- identifiant de connexion
   Password     VARCHAR(250)  NOT NULL,          -- haché avec password_hash()
   Role         VARCHAR(20)   NOT NULL,          -- 'tresorier' | 'responsable' | 'admin'
   LastName     VARCHAR(50)   NOT NULL,
   FirstName    VARCHAR(50)   NOT NULL,
-  Email        VARCHAR(250)  NULL,              -- optionnel
+  IsActive     TINYINT(1)    NOT NULL DEFAULT 1,-- 1=peut se connecter, 0=compte clos
   Created_At   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ClubID       INT           NULL,              -- 0 ou 1 club géré
   CONSTRAINT users_PK PRIMARY KEY (UserID),
-  CONSTRAINT users_Username_UQ UNIQUE (Username),
+  CONSTRAINT users_Email_UQ UNIQUE (Email),
   CONSTRAINT users_ClubID_FK FOREIGN KEY (ClubID) REFERENCES clubs (ClubID)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
