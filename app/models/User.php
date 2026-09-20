@@ -47,6 +47,67 @@ class User
     }
 
     /**
+     * Met à jour le nom et le prénom d'un compte.
+     *
+     * ⚠ PAS ENCORE APPELÉE : elle sera utilisée par AdminController
+     * (tâche 2.10). Un utilisateur ne peut PAS modifier son propre nom
+     * depuis la page « Mon compte » — cette application est un registre
+     * comptable : le nom indique qui a saisi quelle transaction, et des
+     * changements libres en cours d'année rendraient l'historique illisible
+     * et la passation invérifiable. Seul l'administrateur corrige une
+     * identité, comme il gère l'email, le rôle et le club.
+     */
+    public static function updateIdentite(int $id, string $prenom, string $nom): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE users
+             SET FirstName = :prenom, LastName = :nom
+             WHERE UserID = :id'
+        );
+
+        $stmt->execute([
+            ':prenom' => $prenom,
+            ':nom'    => $nom,
+            ':id'     => $id,
+        ]);
+    }
+
+    /**
+     * Enregistre une nouvelle empreinte de mot de passe.
+     *
+     * Reçoit l'EMPREINTE déjà calculée, jamais le mot de passe en clair :
+     * password_hash() appartient au contrôleur, le modèle ne fait qu'écrire.
+     */
+    public static function updateMotDePasse(int $id, string $empreinte): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE users SET Password = :empreinte WHERE UserID = :id'
+        );
+
+        $stmt->execute([
+            ':empreinte' => $empreinte,
+            ':id'        => $id,
+        ]);
+    }
+
+    /**
+     * Renvoie l'empreinte du mot de passe d'un compte.
+     *
+     * Méthode distincte de findById() : l'empreinte ne doit circuler que
+     * là où elle sert vraiment — ici, pour vérifier le mot de passe actuel
+     * avant d'autoriser un changement.
+     */
+    public static function empreinteMotDePasse(int $id): ?string
+    {
+        $stmt = db()->prepare('SELECT Password FROM users WHERE UserID = :id');
+        $stmt->execute([':id' => $id]);
+
+        $empreinte = $stmt->fetchColumn();
+
+        return $empreinte === false ? null : (string) $empreinte;
+    }
+
+    /**
      * Cherche un utilisateur par son identifiant numérique.
      *
      * Utilisé pour recharger les informations du compte connecté à partir de

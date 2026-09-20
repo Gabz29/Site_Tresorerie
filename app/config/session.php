@@ -94,12 +94,118 @@ function utilisateur_courant(): ?array
 /**
  * Interdit l'accès à la page si personne n'est connecté.
  *
- * À appeler en PREMIÈRE ligne de toute action réservée. Sera mise en place
- * page par page à l'étape B de la tâche 2.3.
+ * Appelée depuis le routeur pour toute page non listée comme publique.
  */
 function exiger_connexion(): void
 {
     if (!est_connecte()) {
         rediriger('?page=login');
+    }
+}
+
+/**
+ * ----------------------------------------------------------------------------
+ *  MESSAGES ÉPHÉMÈRES ("flash")
+ * ----------------------------------------------------------------------------
+ *  Après un enregistrement réussi, on redirige (POST puis GET) — ce qui fait
+ *  perdre toutes les variables PHP. Le message « Modifications enregistrées »
+ *  doit donc transiter par la session, et disparaître après une seule
+ *  lecture : sinon il réapparaîtrait à chaque page.
+ */
+
+/**
+ * Dépose un message à afficher sur la page suivante.
+ *
+ * @param string $type 'succes' ou 'erreur' (détermine la couleur affichée)
+ */
+function message_flash(string $type, string $texte): void
+{
+    $_SESSION['flash'] = ['type' => $type, 'texte' => $texte];
+}
+
+/**
+ * Renvoie le message en attente et le supprime.
+ *
+ * @return array{type:string,texte:string}|null
+ */
+function lire_flash(): ?array
+{
+    if (!isset($_SESSION['flash'])) {
+        return null;
+    }
+
+    $flash = $_SESSION['flash'];
+    unset($_SESSION['flash']);   // lu une fois, puis effacé
+
+    return $flash;
+}
+
+/**
+ * ============================================================================
+ *  PROTECTION CSRF
+ * ============================================================================
+ *
+ *  LE PROBLÈME. Un visiteur connecté ouvre, dans un autre onglet, une page
+ *  malveillante. Celle-ci contient un formulaire caché qui envoie un POST
+ *  vers notre application. Le navigateur y joint AUTOMATIQUEMENT le cookie de
+ *  session — il le fait toujours, sans se demander qui a déclenché l'envoi.
+ *  Côté serveur, la requête paraît donc parfaitement légitime, et l'action
+ *  s'exécute au nom de la victime (changement de mot de passe, validation
+ *  d'un remboursement...).
+ *
+ *  L'attaquant n'a pas volé la session : il s'en sert à distance.
+ *
+ *  LA PARADE. Chaque formulaire embarque un jeton secret et imprévisible,
+ *  également conservé en session. À la réception, les deux doivent
+ *  correspondre. Le site malveillant sait fabriquer le formulaire, mais ne
+ *  peut pas deviner le jeton : sa requête est rejetée.
+ *
+ *  Le cookie SameSite=Lax bloque déjà l'essentiel de ces attaques. Le jeton
+ *  est la seconde barrière — on ne fait pas reposer la sécurité d'une
+ *  opération financière sur un seul mécanisme.
+ * ============================================================================
+ */
+
+/**
+ * Renvoie le jeton CSRF de la session, en le créant au premier appel.
+ */
+function jeton_csrf(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        // random_bytes() est un générateur ADAPTÉ À LA CRYPTOGRAPHIE :
+        // sa sortie est imprévisible. rand() ou uniqid() ne conviennent pas,
+        // leurs valeurs pouvant se deviner à partir des précédentes.
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Renvoie le champ caché à insérer dans un formulaire.
+ *
+ * À placer dans TOUT formulaire en POST, sans exception.
+ */
+function champ_csrf(): string
+{
+    return '<input type="hidden" name="csrf_token" value="'
+        . htmlspecialchars(jeton_csrf()) . '">';
+}
+
+/**
+ * Vérifie le jeton reçu ; interrompt la requête s'il est absent ou faux.
+ */
+function verifier_csrf(): void
+{
+    $recu = $_POST['csrf_token'] ?? '';
+
+    // hash_equals() plutôt que === : elle compare en temps constant, c'est-à-
+    // dire qu'elle met le même temps que les chaînes diffèrent au 1er ou au
+    // 30e caractère. Une comparaison ordinaire s'arrête à la première
+    // différence, et ce écart de durée, mesuré sur des milliers d'essais,
+    // permet de reconstituer le jeton caractère par caractère.
+    if (!is_string($recu) || !hash_equals(jeton_csrf(), $recu)) {
+        http_response_code(400);
+        exit('Requête invalide (jeton de sécurité absent ou expiré). Revenez en arrière et réessayez.');
     }
 }

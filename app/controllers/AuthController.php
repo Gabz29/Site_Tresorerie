@@ -118,6 +118,108 @@ class AuthController
     }
 
     /**
+     * Affiche la page « Mon compte » (requête GET).
+     */
+    public function profil(): void
+    {
+        $titre = 'Mon compte';
+
+        // Rechargé depuis la BASE, et non depuis la session : si les
+        // informations viennent d'être modifiées, la session peut être en
+        // retard. C'est la base qui fait foi.
+        $utilisateur = User::findById((int) $_SESSION['user_id']);
+
+        if ($utilisateur === null) {
+            // Le compte a disparu alors que la session existe encore
+            // (supprimé en base, ou session d'une ancienne installation).
+            $this->logout();
+        }
+
+        $flash = lire_flash();
+
+        require __DIR__ . '/../views/auth/profil.php';
+    }
+
+    /**
+     * Traite les deux formulaires de la page « Mon compte » (requête POST).
+     */
+    public function enregistrerProfil(): void
+    {
+        // Premier réflexe de toute action qui ÉCRIT : vérifier le jeton.
+        verifier_csrf();
+
+        /*
+         * SEUL LE MOT DE PASSE est modifiable par l'utilisateur lui-même.
+         *
+         * Le nom et le prénom ne le sont PAS, et c'est une décision métier :
+         * cette application est un registre comptable. Le nom affiché sert à
+         * savoir qui a saisi quelle transaction ; si chacun peut se renommer
+         * en cours d'année (surnom, pseudo), l'historique devient illisible
+         * et la passation au bureau suivant impossible à vérifier.
+         * Ces champs relèvent donc de l'administrateur (tâche 2.10), comme
+         * l'email, le rôle et le club.
+         *
+         * Le mot de passe, à l'inverse, est un secret personnel : il n'a
+         * aucune raison de passer par l'administrateur.
+         */
+        $this->enregistrerMotDePasse((int) $_SESSION['user_id']);
+
+        // Redirection systématique après un POST, réussi ou non : le message
+        // de résultat voyage par la session (flash).
+        rediriger('?page=profil');
+    }
+
+    /**
+     * Change le mot de passe.
+     */
+    private function enregistrerMotDePasse(int $id): void
+    {
+        $actuel       = (string) ($_POST['mdp_actuel'] ?? '');
+        $nouveau      = (string) ($_POST['mdp_nouveau'] ?? '');
+        $confirmation = (string) ($_POST['mdp_confirmation'] ?? '');
+
+        /*
+         * POURQUOI REDEMANDER LE MOT DE PASSE ACTUEL alors que la personne
+         * est déjà connectée : si quelqu'un trouve un poste laissé ouvert, il
+         * pourrait sinon changer le mot de passe et s'approprier le compte
+         * définitivement. Le connaître prouve que c'est bien le titulaire.
+         */
+        $empreinte = User::empreinteMotDePasse($id);
+
+        if ($empreinte === null || !password_verify($actuel, $empreinte)) {
+            message_flash('erreur', 'Le mot de passe actuel est incorrect.');
+            return;
+        }
+
+        if (mb_strlen($nouveau) < 8) {
+            message_flash('erreur', 'Le nouveau mot de passe doit contenir au moins 8 caractères.');
+            return;
+        }
+
+        if ($nouveau !== $confirmation) {
+            message_flash('erreur', 'Le nouveau mot de passe et sa confirmation sont différents.');
+            return;
+        }
+
+        if ($nouveau === $actuel) {
+            message_flash('erreur', 'Le nouveau mot de passe doit être différent de l\'ancien.');
+            return;
+        }
+
+        User::updateMotDePasse($id, password_hash($nouveau, PASSWORD_DEFAULT));
+
+        /*
+         * Changer de mot de passe change les droits d'accès au compte : on
+         * régénère l'identifiant de session, comme à la connexion. Si
+         * quelqu'un avait mis la main sur l'ancien identifiant, il devient
+         * inutilisable.
+         */
+        session_regenerate_id(true);
+
+        message_flash('succes', 'Votre mot de passe a été modifié.');
+    }
+
+    /**
      * Déconnecte l'utilisateur courant.
      */
     public function logout(): void

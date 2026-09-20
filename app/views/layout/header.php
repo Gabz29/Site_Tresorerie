@@ -66,17 +66,28 @@ $titre = $titre ?? 'Jumão';
    *
    * Les entrées de menu réservées à certains rôles seront masquées ici
    * quand les pages correspondantes existeront (tâches 2.6 et 2.10).
+   *
+   * ⚠ POURQUOI CE NOM DE VARIABLE À RALLONGE : un fichier inclus PARTAGE
+   * les variables de celui qui l'inclut. C'est ce qui permet au contrôleur
+   * de transmettre ses données à la vue — mais cela veut aussi dire que
+   * toute variable créée ici ÉCRASE celle du même nom dans la vue.
+   * Un simple $utilisateur a déjà écrasé celui de la vue "Mon compte",
+   * qui contenait la ligne lue en base : les clés ne correspondaient plus
+   * ($utilisateur['Email'] contre $utilisateur['email']) et la page
+   * plantait. D'où ce préfixe "layout" : ces variables appartiennent au
+   * gabarit et ne doivent entrer en collision avec aucune vue.
    */
-  $utilisateur = utilisateur_courant();
+  $layoutUtilisateur = utilisateur_courant();
   ?>
-  <?php if ($utilisateur !== null) : ?>
+  <?php if ($layoutUtilisateur !== null) : ?>
     <div class="utilisateur">
       <div class="utilisateur-nom">
-        <?= htmlspecialchars($utilisateur['prenom'] . ' ' . $utilisateur['nom']) ?>
+        <?= htmlspecialchars($layoutUtilisateur['prenom'] . ' ' . $layoutUtilisateur['nom']) ?>
       </div>
       <div class="utilisateur-role">
-        <?= htmlspecialchars(libelle_role($utilisateur['role'])) ?>
+        <?= htmlspecialchars(libelle_role($layoutUtilisateur['role'])) ?>
       </div>
+      <a href="<?= BASE_URL ?>/index.php?page=profil">Mon compte</a>
       <a class="deconnexion" href="<?= BASE_URL ?>/index.php?page=logout">Déconnexion</a>
     </div>
   <?php endif; ?>

@@ -128,6 +128,15 @@ switch ($page) {
         }
         break;
 
+    case 'profil':
+        require_once __DIR__ . '/../app/controllers/AuthController.php';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            (new AuthController())->enregistrerProfil();
+        } else {
+            (new AuthController())->profil();
+        }
+        break;
+
     case 'logout':
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         (new AuthController())->logout();
