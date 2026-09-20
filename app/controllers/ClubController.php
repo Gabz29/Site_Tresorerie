@@ -80,4 +80,126 @@ class ClubController
 
         require __DIR__ . '/../views/clubs/show.php';
     }
+
+    /**
+     * Formulaire de création — URL : ?page=club-nouveau
+     */
+    public function create(): void
+    {
+        // Réservé au bureau. Première ligne de la méthode : avant toute
+        // lecture, tout affichage, toute écriture.
+        exiger_bureau();
+
+        $titre  = 'Nouveau club';
+        $club   = null;          // aucune donnée pré-remplie : c'est une création
+        $erreur = '';
+
+        require __DIR__ . '/../views/clubs/form.php';
+    }
+
+    /**
+     * Formulaire de modification — URL : ?page=club-modifier&id=3
+     */
+    public function edit(): void
+    {
+        exiger_bureau();
+
+        $id   = (int) ($_GET['id'] ?? 0);
+        $club = Club::findById($id);
+
+        if ($club === null) {
+            http_response_code(404);
+            require __DIR__ . '/../views/errors/404.php';
+            return;
+        }
+
+        $titre  = 'Modifier ' . $club['Name'];
+        $erreur = '';
+
+        require __DIR__ . '/../views/clubs/form.php';
+    }
+
+    /**
+     * Enregistre une création ou une modification (requête POST).
+     *
+     * Une seule méthode pour les deux : les règles de validation sont
+     * identiques, seul l'enregistrement final diffère. Les séparer
+     * obligerait à maintenir deux fois les mêmes contrôles — et à corriger
+     * deux fois le jour où l'un d'eux change.
+     */
+    public function save(): void
+    {
+        exiger_bureau();
+        verifier_csrf();
+
+        // 0 = création, sinon modification du club portant cet identifiant.
+        $id = (int) ($_POST['id'] ?? 0);
+
+        $nom         = trim((string) ($_POST['nom'] ?? ''));
+        $description = trim((string) ($_POST['description'] ?? ''));
+
+        // Une case à cocher non cochée n'est PAS envoyée par le navigateur :
+        // son absence vaut donc « non ». Tester sa présence, et non sa
+        // valeur, est la seule façon fiable de lire une case à cocher.
+        $actif = isset($_POST['actif']);
+
+        // Le club existe-t-il, si l'on prétend le modifier ?
+        $club = $id > 0 ? Club::findById($id) : null;
+
+        if ($id > 0 && $club === null) {
+            http_response_code(404);
+            require __DIR__ . '/../views/errors/404.php';
+            return;
+        }
+
+        // --- Validations, côté serveur ---------------------------------
+        // Le formulaire porte déjà « required » et « maxlength », mais ce
+        // sont des conforts d'affichage : n'importe qui peut envoyer une
+        // requête sans passer par la page. Seuls ces contrôles protègent.
+
+        $erreur = '';
+
+        if ($nom === '') {
+            $erreur = 'Le nom du club est obligatoire.';
+        } elseif (mb_strlen($nom) > 50) {
+            $erreur = 'Le nom du club est limité à 50 caractères.';
+        } elseif (Club::nomExiste($nom, $id > 0 ? $id : null)) {
+            $erreur = 'Un club porte déjà ce nom.';
+        }
+
+        if ($erreur !== '') {
+            /*
+             * On réaffiche le formulaire avec les valeurs saisies plutôt que
+             * de rediriger : sans cela, la personne perdrait tout ce qu'elle
+             * vient de taper. C'est l'inverse du cas « enregistrement
+             * réussi », où l'on redirige pour qu'un rafraîchissement ne
+             * renvoie pas le formulaire.
+             */
+            $titre = $id > 0 ? 'Modifier le club' : 'Nouveau club';
+            $club  = [
+                'ClubID'      => $id,
+                'Name'        => $nom,
+                'Description' => $description,
+                'IsActive'    => $actif ? 1 : 0,
+            ];
+
+            require __DIR__ . '/../views/clubs/form.php';
+            return;
+        }
+
+        // --- Enregistrement ---------------------------------------------
+        // Description vide -> NULL, pour n'avoir qu'une seule façon de
+        // représenter l'absence de description.
+        $descriptionAEnregistrer = $description === '' ? null : $description;
+
+        if ($id > 0) {
+            Club::update($id, $nom, $descriptionAEnregistrer, $actif);
+            message_flash('succes', 'Le club a été modifié.');
+        } else {
+            $id = Club::create($nom, $descriptionAEnregistrer, $actif);
+            message_flash('succes', 'Le club a été créé.');
+        }
+
+        rediriger('?page=club&id=' . $id);
+    }
 }

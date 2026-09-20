@@ -121,6 +121,26 @@ switch ($page) {
         (new ClubController())->show();
         break;
 
+    case 'club-nouveau':
+        require_once __DIR__ . '/../app/controllers/ClubController.php';
+        (new ClubController())->create();
+        break;
+
+    case 'club-modifier':
+        require_once __DIR__ . '/../app/controllers/ClubController.php';
+        (new ClubController())->edit();
+        break;
+
+    case 'club-enregistrer':
+        require_once __DIR__ . '/../app/controllers/ClubController.php';
+        // Cette adresse n'existe qu'en POST : y arriver en GET (par un lien
+        // ou un rafraîchissement) n'a aucun sens et ne doit rien déclencher.
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=clubs');
+        }
+        (new ClubController())->save();
+        break;
+
     case 'login':
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         // Même adresse, deux comportements selon la méthode HTTP :

@@ -75,4 +75,79 @@ class Club
         // ce false en null : le contrôleur teste alors simplement "=== null".
         return $club === false ? null : $club;
     }
+
+    /**
+     * Un club porte-t-il déjà ce nom ?
+     *
+     * @param int|null $exclureId Club à ignorer dans la recherche — sert en
+     *                            modification : un club n'est pas en doublon
+     *                            avec lui-même si l'on ne change pas son nom.
+     *
+     * ⚠ CETTE VÉRIFICATION NE REMPLACE PAS LA CONTRAINTE UNIQUE de la base
+     * (clubs_Name_UQ), elle la double. Les deux ont des rôles différents :
+     *   - ici, en PHP, pour afficher un message compréhensible ;
+     *   - en base, pour GARANTIR qu'un doublon ne puisse jamais exister,
+     *     même si un futur écran oubliait ce contrôle.
+     * Le code peut se tromper ; la contrainte, non.
+     */
+    public static function nomExiste(string $nom, ?int $exclureId = null): bool
+    {
+        $sql = 'SELECT COUNT(*) FROM clubs WHERE Name = :nom';
+
+        if ($exclureId !== null) {
+            $sql .= ' AND ClubID <> :id';
+        }
+
+        $stmt = db()->prepare($sql);
+        $stmt->bindValue(':nom', $nom);
+
+        if ($exclureId !== null) {
+            $stmt->bindValue(':id', $exclureId, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+
+        return ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    /**
+     * Crée un club et renvoie son identifiant.
+     */
+    public static function create(string $nom, ?string $description, bool $actif): int
+    {
+        $stmt = db()->prepare(
+            'INSERT INTO clubs (Name, Description, IsActive)
+             VALUES (:nom, :description, :actif)'
+        );
+
+        $stmt->execute([
+            ':nom'         => $nom,
+            // Une description vide est enregistrée comme NULL plutôt que
+            // comme chaîne vide : deux façons de dire « rien » compliquent
+            // inutilement tous les tests qui suivront.
+            ':description' => $description,
+            ':actif'       => $actif ? 1 : 0,
+        ]);
+
+        return (int) db()->lastInsertId();
+    }
+
+    /**
+     * Met à jour un club existant.
+     */
+    public static function update(int $id, string $nom, ?string $description, bool $actif): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE clubs
+             SET Name = :nom, Description = :description, IsActive = :actif
+             WHERE ClubID = :id'
+        );
+
+        $stmt->execute([
+            ':nom'         => $nom,
+            ':description' => $description,
+            ':actif'       => $actif ? 1 : 0,
+            ':id'          => $id,
+        ]);
+    }
 }

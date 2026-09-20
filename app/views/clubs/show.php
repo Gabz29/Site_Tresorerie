@@ -21,6 +21,24 @@ require __DIR__ . '/../layout/header.php';
 
 <p><a href="<?= BASE_URL ?>/index.php?page=clubs">&larr; Retour à la liste des clubs</a></p>
 
+<?php
+// Message de confirmation après création ou modification.
+$flash = lire_flash();
+?>
+<?php if ($flash !== null) : ?>
+  <p class="flash flash-<?= htmlspecialchars($flash['type']) ?>">
+    <?= htmlspecialchars($flash['texte']) ?>
+  </p>
+<?php endif; ?>
+
+<?php if (est_bureau()) : ?>
+  <p class="barre-actions">
+    <a class="btn" href="<?= BASE_URL ?>/index.php?page=club-modifier&amp;id=<?= (int) $club['ClubID'] ?>">
+      Modifier ce club
+    </a>
+  </p>
+<?php endif; ?>
+
 <?php if ($club['Description'] !== null && $club['Description'] !== '') : ?>
   <p class="club-description"><?= htmlspecialchars($club['Description']) ?></p>
 <?php endif; ?>

@@ -22,6 +22,19 @@ declare(strict_types=1);
 require __DIR__ . '/../layout/header.php';
 ?>
 
+<?php
+/*
+ * Bouton réservé au bureau. Comme partout : ce masquage évite un lien qui
+ * mènerait à un refus, il ne protège pas — c'est exiger_bureau(), dans
+ * ClubController::create(), qui fait barrage.
+ */
+?>
+<?php if (est_bureau()) : ?>
+  <p class="barre-actions">
+    <a class="btn" href="<?= BASE_URL ?>/index.php?page=club-nouveau">+ Nouveau club</a>
+  </p>
+<?php endif; ?>
+
 <?php if ($clubs === []) : ?>
 
     <?php
