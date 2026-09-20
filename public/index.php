@@ -51,6 +51,7 @@ define('BASE_URL', rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])
  *  commun à toutes les pages se fait à un seul endroit.
  */
 require_once __DIR__ . '/../app/config/session.php';
+require_once __DIR__ . '/../app/config/contexte.php';
 
 demarrer_session();
 
@@ -151,6 +152,42 @@ switch ($page) {
         } else {
             (new AuthController())->showLogin();
         }
+        break;
+
+    case 'exercice-consulter':
+        // Changer l'exercice qu'on REGARDE. Accessible à tous — cela ne
+        // modifie aucune donnée, seulement l'affichage de sa propre session.
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=clubs');
+        }
+        verifier_csrf();
+        definir_exercice_consulte((int) ($_POST['exercice'] ?? 0));
+
+        // Retour sur la page d'où venait la demande, pour ne pas renvoyer
+        // l'utilisateur à l'accueil à chaque changement d'exercice.
+        $retour = $_POST['retour'] ?? '?page=clubs';
+        rediriger(is_string($retour) && str_starts_with($retour, '?page=') ? $retour : '?page=clubs');
+        break;
+
+    case 'exercices':
+        require_once __DIR__ . '/../app/controllers/FiscalYearController.php';
+        (new FiscalYearController())->index();
+        break;
+
+    case 'exercice-creer':
+        require_once __DIR__ . '/../app/controllers/FiscalYearController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=exercices');
+        }
+        (new FiscalYearController())->save();
+        break;
+
+    case 'exercice-activer':
+        require_once __DIR__ . '/../app/controllers/FiscalYearController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=exercices');
+        }
+        (new FiscalYearController())->activate();
         break;
 
     case 'profil':

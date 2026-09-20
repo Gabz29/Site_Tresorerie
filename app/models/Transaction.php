@@ -28,14 +28,14 @@ class Transaction
      *
      * @return array<int,array<string,mixed>>
      */
-    public static function findByClub(int $clubId, int $limite = 50): array
+    public static function findByClub(int $clubId, ?int $fiscalYearId, int $limite = 50): array
     {
         $stmt = db()->prepare(
             'SELECT t.TransactionID, t.Type, t.Amount, t.Date, t.Description,
                     t.Payment_Method, t.Status, c.Name AS CategoryName
              FROM transactions t
              LEFT JOIN categories c ON c.CategoryID = t.CategoryID
-             WHERE t.ClubID = :club
+             WHERE t.ClubID = :club AND t.FiscalYearID = :exercice
              ORDER BY t.Date DESC, t.TransactionID DESC
              LIMIT :limite'
         );
@@ -44,6 +44,7 @@ class Transaction
         // préparée non émulée, MySQL refuse une chaîne à cet endroit, et
         // execute([...]) transmet tout sous forme de chaînes.
         $stmt->bindValue(':club', $clubId, PDO::PARAM_INT);
+        $stmt->bindValue(':exercice', (int) $fiscalYearId, PDO::PARAM_INT);
         $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
         $stmt->execute();
 
@@ -59,17 +60,20 @@ class Transaction
      *
      * @return array{depenses:string,recettes:string}
      */
-    public static function totauxParClub(int $clubId): array
+    public static function totauxParClub(int $clubId, ?int $fiscalYearId): array
     {
         $stmt = db()->prepare(
             "SELECT
                 COALESCE(SUM(CASE WHEN Type = 'depense' THEN Amount END), 0) AS depenses,
                 COALESCE(SUM(CASE WHEN Type = 'recette' THEN Amount END), 0) AS recettes
              FROM transactions
-             WHERE ClubID = :club AND Status = 'valide'"
+             WHERE ClubID = :club AND FiscalYearID = :exercice AND Status = 'valide'"
         );
 
-        $stmt->execute([':club' => $clubId]);
+        $stmt->execute([
+            ':club'     => $clubId,
+            ':exercice' => (int) $fiscalYearId,
+        ]);
 
         // fetch() renvoie toujours une ligne ici (SUM sur un ensemble vide
         // donne NULL, que COALESCE transforme en 0).

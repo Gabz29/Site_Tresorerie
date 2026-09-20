@@ -60,6 +60,7 @@ $titre = $titre ?? 'Jumão';
       <hr>
       <div class="section-titre">Bureau BDE</div>
       <span class="inactif">Budgets</span>
+      <a href="<?= BASE_URL ?>/index.php?page=exercices">Exercices</a>
     <?php endif; ?>
 
     <?php if (est_admin()) : ?>
@@ -95,7 +96,62 @@ $titre = $titre ?? 'Jumão';
    * gabarit et ne doivent entrer en collision avec aucune vue.
    */
   $layoutUtilisateur = utilisateur_courant();
+  $layoutExercices   = FiscalYear::getAll();
+  $layoutExercice    = exercice_consulte();
   ?>
+
+  <?php
+  /*
+   * Sélecteur d'exercice — visible sur toutes les pages.
+   *
+   * Il change ce qu'on REGARDE, jamais ce sur quoi on saisit : l'exercice
+   * actif est décidé par le bureau et vaut pour tout le monde, tandis que
+   * ce choix-ci n'engage que la session en cours.
+   *
+   * Le formulaire s'envoie tout seul au changement (onchange), pour éviter
+   * un bouton « valider » que personne ne penserait à cliquer. Le bouton
+   * reste néanmoins présent dans <noscript> : sans JavaScript, la liste
+   * serait autrement inutilisable.
+   */
+  ?>
+  <?php if ($layoutExercices !== []) : ?>
+    <div class="exercice-choix">
+      <form method="post" action="<?= BASE_URL ?>/index.php?page=exercice-consulter">
+        <?= champ_csrf() ?>
+        <?php
+        /*
+         * On mémorise la page courante pour y revenir après le changement,
+         * plutôt que de renvoyer l'utilisateur à l'accueil à chaque fois.
+         *
+         * Cette valeur vient du navigateur : le routeur vérifie donc qu'elle
+         * commence bien par "?page=" avant de rediriger. Sans ce contrôle,
+         * on aurait une « redirection ouverte » — un lien vers notre site
+         * qui renverrait en réalité vers un site tiers, ce qui sert
+         * couramment à rendre crédible une page d'hameçonnage.
+         */
+        ?>
+        <input type="hidden" name="retour"
+               value="<?= htmlspecialchars('?' . ($_SERVER['QUERY_STRING'] ?? 'page=clubs')) ?>">
+        <label for="exercice-consulte">Exercice consulté</label>
+        <select id="exercice-consulte" name="exercice" onchange="this.form.submit()">
+          <?php foreach ($layoutExercices as $layoutEx) : ?>
+            <option value="<?= (int) $layoutEx['FiscalYearID'] ?>"
+              <?= $layoutExercice !== null
+                  && (int) $layoutEx['FiscalYearID'] === (int) $layoutExercice['FiscalYearID']
+                  ? 'selected' : '' ?>>
+              <?= htmlspecialchars($layoutEx['Year']) ?><?= (int) $layoutEx['IsActive'] === 1 ? ' (en cours)' : '' ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <noscript><button type="submit" class="btn btn-petit">Changer</button></noscript>
+      </form>
+
+      <?php if (!exercice_consulte_est_actif()) : ?>
+        <p class="note note-alerte">Exercice clos — lecture seule</p>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+
   <?php if ($layoutUtilisateur !== null) : ?>
     <div class="utilisateur">
       <div class="utilisateur-nom">

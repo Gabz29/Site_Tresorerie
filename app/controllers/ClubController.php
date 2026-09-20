@@ -74,9 +74,17 @@ class ClubController
             refuser_acces();
         }
 
+        /*
+         * Les chiffres affichés portent sur l'exercice CONSULTÉ, pas sur
+         * l'exercice actif : c'est ce qui permet de revenir sur une année
+         * passée et d'y retrouver exactement les montants de l'époque.
+         */
+        $exercice     = exercice_consulte();
+        $exerciceId   = exercice_consulte_id();
+
         $titre        = $club['Name'];
-        $transactions = Transaction::findByClub($id);
-        $totaux       = Transaction::totauxParClub($id);
+        $transactions = Transaction::findByClub($id, $exerciceId);
+        $totaux       = Transaction::totauxParClub($id, $exerciceId);
 
         require __DIR__ . '/../views/clubs/show.php';
     }

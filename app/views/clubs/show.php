@@ -48,7 +48,12 @@ $flash = lire_flash();
 <?php endif; ?>
 
 <section class="bloc">
-  <h2>Mouvements enregistrés</h2>
+  <h2>
+    Mouvements enregistrés
+    <?php if ($exercice !== null) : ?>
+      <span class="note">— exercice <?= htmlspecialchars($exercice['Year']) ?></span>
+    <?php endif; ?>
+  </h2>
 
   <?php
   /*

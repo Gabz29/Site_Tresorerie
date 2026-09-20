@@ -101,6 +101,36 @@ body {
   margin-bottom: .5rem;
 }
 
+/* -------------------------------------------- Sélecteur d'exercice --- */
+
+.exercice-choix {
+  margin: .8rem 0;
+  padding: .6rem 0;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+
+.exercice-choix label {
+  display: block;
+  font-size: .7rem;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: .25rem;
+}
+
+.exercice-choix select {
+  width: 100%;
+  padding: .3rem;
+  border: 1px solid #ccc;
+  font-size: .8rem;
+  font-family: inherit;
+}
+
+.note-alerte {
+  color: #8a5a1a;
+  margin-top: .4rem;
+}
+
 .utilisateur a {
   display: block;
   color: #1a4f8a;
@@ -199,6 +229,16 @@ body {
 
 .barre-actions {
   margin-bottom: 1rem;
+}
+
+/* Formulaire réduit à un bouton, à l'intérieur d'une cellule de tableau. */
+.form-ligne {
+  display: inline;
+}
+
+.btn-petit {
+  padding: .2rem .5rem;
+  font-size: .75rem;
 }
 
 /* Un lien qui doit avoir l'apparence d'un bouton. */
