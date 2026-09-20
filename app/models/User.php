@@ -34,7 +34,7 @@ class User
         // Le contrôleur vérifiera d'abord le mot de passe, et ne parlera de
         // compte désactivé qu'ensuite — voir AuthController::login().
         $stmt = db()->prepare(
-            'SELECT UserID, Email, Password, Role, LastName, FirstName, IsActive, ClubID
+            'SELECT UserID, Email, Password, Role, LastName, FirstName, IsAdmin, IsActive, ClubID
              FROM users
              WHERE Email = :email'
         );

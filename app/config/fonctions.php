@@ -26,20 +26,20 @@ function rediriger(string $cible): never
 /**
  * Traduit un rôle stocké en base en libellé affichable.
  *
- * En base, le rôle est un mot-clé court et stable ('tresorier') : c'est lui
+ * En base, le rôle est un mot-clé court et stable ('bureau') : c'est lui
  * qu'on compare dans le code, jamais le libellé. Le texte affiché peut donc
  * changer sans toucher à la moindre condition ni à la base.
  *
- * ATTENTION AU VOCABULAIRE (cf. notes, tâche 1.1) : les maquettes emploient
- * encore "admin" pour désigner le trésorier. Ce n'est pas le cas ici —
- * l'administrateur gère les comptes, le trésorier gère l'argent.
+ * 'bureau' plutôt que 'tresorier' : ce rôle est porté par le Président, le
+ * Vice-Président ET le Trésorier du BDE. Un nom de rôle décrit un niveau
+ * d'accès, pas une fonction — sinon voir le compte du président marqué
+ * « trésorier » sèmerait la confusion.
  */
 function libelle_role(string $role): string
 {
     return match ($role) {
-        'tresorier'   => 'Trésorier BDE',
+        'bureau'      => 'Bureau BDE',
         'responsable' => 'Responsable de club',
-        'admin'       => 'Administrateur',
         default       => $role,
     };
 }

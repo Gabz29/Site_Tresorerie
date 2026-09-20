@@ -46,10 +46,27 @@ $titre = $titre ?? 'Jumão';
     <span class="inactif">Transactions</span>
     <span class="inactif">Remboursements</span>
 
-    <hr>
-    <div class="section-titre">Trésorier</div>
-    <span class="inactif">Budgets</span>
-    <span class="inactif">Utilisateurs</span>
+    <?php
+    /*
+     * Entrées réservées, affichées selon les droits.
+     *
+     * ⚠ CE MASQUAGE N'EST PAS UNE PROTECTION : il évite d'afficher des liens
+     * menant à un refus, rien de plus. Quelqu'un qui tape l'adresse
+     * directement contourne l'affichage sans difficulté. La vraie barrière
+     * est exiger_bureau() / exiger_admin(), côté serveur, dans le contrôleur.
+     */
+    ?>
+    <?php if (est_bureau()) : ?>
+      <hr>
+      <div class="section-titre">Bureau BDE</div>
+      <span class="inactif">Budgets</span>
+    <?php endif; ?>
+
+    <?php if (est_admin()) : ?>
+      <hr>
+      <div class="section-titre">Administration</div>
+      <span class="inactif">Utilisateurs</span>
+    <?php endif; ?>
   </nav>
 
   <?php

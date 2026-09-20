@@ -101,12 +101,13 @@ class AuthController
         // Ce qu'on garde en session : le strict nécessaire, et JAMAIS le mot
         // de passe ni son empreinte. Le rôle y est stocké parce qu'il est
         // consulté à chaque page ; il est rechargé depuis la base au besoin.
-        $_SESSION['user_id'] = (int) $user['UserID'];
-        $_SESSION['email']   = $user['Email'];
-        $_SESSION['role']    = $user['Role'];
-        $_SESSION['prenom']  = $user['FirstName'];
-        $_SESSION['nom']     = $user['LastName'];
-        $_SESSION['club_id'] = $user['ClubID'] !== null ? (int) $user['ClubID'] : null;
+        $_SESSION['user_id']  = (int) $user['UserID'];
+        $_SESSION['email']    = $user['Email'];
+        $_SESSION['role']     = $user['Role'];
+        $_SESSION['prenom']   = $user['FirstName'];
+        $_SESSION['nom']      = $user['LastName'];
+        $_SESSION['club_id']  = $user['ClubID'] !== null ? (int) $user['ClubID'] : null;
+        $_SESSION['is_admin'] = ((int) $user['IsAdmin']) === 1;
 
         /*
          * Redirection après un POST réussi ("POST puis redirection vers GET").

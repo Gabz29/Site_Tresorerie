@@ -116,6 +116,11 @@ switch ($page) {
         (new ClubController())->index();
         break;
 
+    case 'club':
+        require_once __DIR__ . '/../app/controllers/ClubController.php';
+        (new ClubController())->show();
+        break;
+
     case 'login':
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         // Même adresse, deux comportements selon la méthode HTTP :

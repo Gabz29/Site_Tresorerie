@@ -82,13 +82,102 @@ function utilisateur_courant(): ?array
     }
 
     return [
-        'id'      => $_SESSION['user_id'],
-        'email'   => $_SESSION['email']   ?? '',
-        'role'    => $_SESSION['role']    ?? '',
-        'prenom'  => $_SESSION['prenom']  ?? '',
-        'nom'     => $_SESSION['nom']     ?? '',
-        'club_id' => $_SESSION['club_id'] ?? null,
+        'id'       => $_SESSION['user_id'],
+        'email'    => $_SESSION['email']    ?? '',
+        'role'     => $_SESSION['role']     ?? '',
+        'prenom'   => $_SESSION['prenom']   ?? '',
+        'nom'      => $_SESSION['nom']      ?? '',
+        'club_id'  => $_SESSION['club_id']  ?? null,
+        'is_admin' => $_SESSION['is_admin'] ?? false,
     ];
+}
+
+/**
+ * ============================================================================
+ *  DROITS D'ACCÈS
+ * ============================================================================
+ *
+ *  Deux notions DISTINCTES, à ne pas confondre :
+ *
+ *   - le RÔLE ('bureau' ou 'responsable') = jusqu'où va la vue sur les
+ *     finances. 'bureau' est porté par le Président, le Vice-Président et le
+ *     Trésorier du BDE : c'est un niveau d'accès, pas un titre.
+ *
+ *   - la PERMISSION IsAdmin = le droit de gérer les comptes utilisateurs.
+ *     Elle s'ajoute à n'importe quel rôle, ce qui évite d'avoir à créer un
+ *     second compte au trésorier pour qu'il puisse créer des accès.
+ *
+ *  ⚠ CES FONCTIONS SONT LA SEULE PROTECTION RÉELLE. Masquer un lien dans le
+ *  menu n'empêche personne de taper l'adresse directement dans le navigateur.
+ *  Ce qu'on AFFICHE relève du confort ; ce qu'on AUTORISE se vérifie ici,
+ *  côté serveur, à chaque page et à chaque action.
+ * ============================================================================
+ */
+
+/**
+ * L'utilisateur fait-il partie du bureau BDE (P, VP, Trésorier) ?
+ */
+function est_bureau(): bool
+{
+    return ($_SESSION['role'] ?? '') === 'bureau';
+}
+
+/**
+ * L'utilisateur peut-il gérer les comptes utilisateurs ?
+ */
+function est_admin(): bool
+{
+    return !empty($_SESSION['is_admin']);
+}
+
+/**
+ * L'utilisateur a-t-il le droit de consulter le détail d'un club ?
+ *
+ * Le bureau voit tout ; un responsable ne voit que le club dont il a la
+ * charge. La LISTE des clubs reste visible de tous — savoir quels clubs
+ * existent n'a rien de confidentiel, contrairement à leurs montants.
+ */
+function peut_voir_club(int $clubId): bool
+{
+    if (est_bureau()) {
+        return true;
+    }
+
+    return ($_SESSION['club_id'] ?? null) === $clubId;
+}
+
+/**
+ * Interrompt la requête si l'utilisateur n'est pas membre du bureau.
+ */
+function exiger_bureau(): void
+{
+    if (!est_bureau()) {
+        refuser_acces();
+    }
+}
+
+/**
+ * Interrompt la requête si l'utilisateur ne peut pas gérer les comptes.
+ */
+function exiger_admin(): void
+{
+    if (!est_admin()) {
+        refuser_acces();
+    }
+}
+
+/**
+ * Affiche une page « accès refusé » et arrête tout.
+ *
+ * 403 et non 404 : la personne est bien identifiée, la page existe, c'est
+ * l'autorisation qui manque. Le code HTTP dit lequel des deux problèmes
+ * s'est posé.
+ */
+function refuser_acces(): never
+{
+    http_response_code(403);
+    require dirname(__DIR__) . '/views/errors/403.php';
+    exit;
 }
 
 /**

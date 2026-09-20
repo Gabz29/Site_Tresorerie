@@ -62,16 +62,36 @@ CREATE TABLE fiscalyear (
 --     l'historique comptable, qui est précisément ce que l'application doit
 --     conserver. On DÉSACTIVE donc le compte : il garde ses liens, mais ne
 --     permet plus de se connecter.
+--
+--     Role : un NIVEAU D'ACCÈS, pas un titre. 'bureau' est porté par le
+--     Président, le Vice-Président ET le Trésorier du BDE — tous trois ont
+--     besoin de voir et gérer l'ensemble des clubs. Le rôle ne s'appelle
+--     donc pas 'tresorier' : il décrit ce qu'on peut faire, pas la fonction
+--     qu'on occupe.
+--
+--     IsAdmin : gérer les comptes utilisateurs est une PERMISSION qui
+--     s'ajoute au rôle, et non un rôle à part. Sans cela, le trésorier BDE
+--     devrait posséder un second compte pour créer des accès — impossible,
+--     puisque son email sert déjà d'identifiant au premier. Avec une simple
+--     colonne, il reste connecté sous son identité et l'historique dit
+--     « Jean Dupont a créé le compte de X » plutôt qu'un anonyme « admin ».
 CREATE TABLE users (
   UserID       INT           NOT NULL AUTO_INCREMENT,
   Email        VARCHAR(250)  NOT NULL,          -- identifiant de connexion
   Password     VARCHAR(250)  NOT NULL,          -- haché avec password_hash()
-  Role         VARCHAR(20)   NOT NULL,          -- 'tresorier' | 'responsable' | 'admin'
+  Role         VARCHAR(20)   NOT NULL,          -- 'bureau' | 'responsable'
   LastName     VARCHAR(50)   NOT NULL,
   FirstName    VARCHAR(50)   NOT NULL,
+  IsAdmin      TINYINT(1)    NOT NULL DEFAULT 0,-- 1=peut gérer les comptes
   IsActive     TINYINT(1)    NOT NULL DEFAULT 1,-- 1=peut se connecter, 0=compte clos
   Created_At   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  ClubID       INT           NULL,              -- 0 ou 1 club géré
+  -- ClubID = LE CLUB AUQUEL L'ACCÈS EST LIMITÉ, et rien d'autre.
+  -- NULL = aucune limite : c'est le cas de tous les membres du bureau,
+  -- qui voient l'ensemble des clubs.
+  -- Ne PAS y mettre le club de rattachement d'un membre du bureau : la
+  -- colonne voudrait alors dire deux choses selon le rôle, et en lisant la
+  -- table on croirait son accès restreint alors qu'il ne l'est pas.
+  ClubID       INT           NULL,
   CONSTRAINT users_PK PRIMARY KEY (UserID),
   CONSTRAINT users_Email_UQ UNIQUE (Email),
   CONSTRAINT users_ClubID_FK FOREIGN KEY (ClubID) REFERENCES clubs (ClubID)

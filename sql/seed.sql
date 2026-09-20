@@ -93,22 +93,31 @@ INSERT INTO fiscalyear (FiscalYearID, `Year`, Start_Date, End_Date, IsActive) VA
 --
 --  ClubID : le club géré par l'utilisateur (NULL si aucun).
 -- ============================================================================
---  Le compte nº4 est volontairement DÉSACTIVÉ (IsActive = 0) : c'est
---  l'ancien trésorier, dont les transactions restent en base. Il sert de cas
---  de test — s'il parvient à se connecter, c'est que le filtre manque.
-INSERT INTO users (UserID, Email, Password, Role, LastName, FirstName, IsActive, ClubID) VALUES
+--  Les 4 comptes couvrent les combinaisons utiles pour tester les droits :
+--    nº1 bureau + admin   -> tout, y compris la gestion des comptes
+--    nº2 responsable      -> son club uniquement
+--    nº3 bureau sans admin-> toutes les finances, mais pas les comptes
+--    nº4 DÉSACTIVÉ        -> doit être refusé à la connexion
+--
+--  ClubID est NULL pour les membres du bureau : la colonne signifie « club
+--  auquel l'accès est limité », et le bureau n'a aucune limite. Y inscrire
+--  leur club de rattachement laisserait croire, en lisant la table, que leur
+--  accès est restreint. En pratique il n'existera d'ailleurs jamais de
+--  « responsable du BDE » : ceux qui gèrent le BDE (P, VP, Trésorier) ont
+--  précisément le rôle bureau.
+INSERT INTO users (UserID, Email, Password, Role, LastName, FirstName, IsAdmin, IsActive, ClubID) VALUES
   (1, 'jean.dupont@isen-ouest.yncrea.fr',
       '$2y$10$Ye8IARnb0Wm09ynt68U6IuEbXj21edV7UbYOSqM8dxGzivXXmBYBa',
-      'tresorier',   'Dupont',  'Jean',    1,    1),
+      'bureau',      'Dupont',  'Jean',    1, 1, NULL),   -- Trésorier BDE
   (2, 'camille.martin@isen-ouest.yncrea.fr',
       '$2y$10$WdpQOvDj4CCxY.WXK7KFBuSjbAqy89/wI1ulqKnksQHBf71t4JAza',
-      'responsable', 'Martin',  'Camille', 1,    2),
+      'responsable', 'Martin',  'Camille', 0, 1,    2),   -- limitée au Club Robotique
   (3, 'alex.bernard@isen-ouest.yncrea.fr',
       '$2y$10$aIjirT1moU83qLglTPTx/uiSzXFXGlft2XIM7KSLgQQITl1MyOoaW',
-      'admin',       'Bernard', 'Alex',    1, NULL),
+      'bureau',      'Bernard', 'Alex',    0, 1, NULL),   -- Vice-président BDE
   (4, 'paul.ancien@isen-ouest.yncrea.fr',
       '$2y$10$Ye8IARnb0Wm09ynt68U6IuEbXj21edV7UbYOSqM8dxGzivXXmBYBa',
-      'tresorier',   'Ancien',  'Paul',    0,    1);   -- bureau précédent
+      'bureau',      'Ancien',  'Paul',    0, 0, NULL);   -- bureau précédent
 
 -- ============================================================================
 --  5. BUDGETS — enveloppe prévisionnelle, 1 par club et par exercice
@@ -198,9 +207,9 @@ SET FOREIGN_KEY_CHECKS = 1;   -- réactive les vérifications
 --    6 clubs (dont 1 archivé, pour tester le filtre IsActive)
 --    2 exercices (2026-2027 actif)
 --    4 utilisateurs — connexion par EMAIL, mot de passe : password123
---      jean.dupont@isen-ouest.yncrea.fr     (tresorier)
+--      jean.dupont@isen-ouest.yncrea.fr     (bureau + admin)
 --      camille.martin@isen-ouest.yncrea.fr  (responsable, club Robotique)
---      alex.bernard@isen-ouest.yncrea.fr    (admin)
+--      alex.bernard@isen-ouest.yncrea.fr    (bureau, sans droit admin)
 --      paul.ancien@isen-ouest.yncrea.fr     (DÉSACTIVÉ — doit être refusé)
 --    5 budgets sur l'exercice en cours
 --   12 tranches de versement (5 reçues, 7 prévues)

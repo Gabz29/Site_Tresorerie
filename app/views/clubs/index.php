@@ -61,6 +61,25 @@ require __DIR__ . '/../layout/header.php';
                 <?php if ($club['Description'] !== null && $club['Description'] !== '') : ?>
                     <p class="club-description"><?= htmlspecialchars($club['Description']) ?></p>
                 <?php endif; ?>
+
+                <?php
+                /*
+                 * Le lien vers la fiche n'apparaît que pour les clubs que
+                 * l'on a le droit de consulter : le bureau les voit tous,
+                 * un responsable seulement le sien.
+                 *
+                 * Ce n'est QUE de l'affichage — éviter un lien qui mènerait
+                 * à un refus. La protection réelle est dans
+                 * ClubController::show(), qui revérifie côté serveur.
+                 */
+                ?>
+                <?php if (peut_voir_club((int) $club['ClubID'])) : ?>
+                    <p>
+                        <a href="<?= BASE_URL ?>/index.php?page=club&amp;id=<?= (int) $club['ClubID'] ?>">
+                            Voir le détail
+                        </a>
+                    </p>
+                <?php endif; ?>
             </li>
         <?php endforeach; ?>
     </ul>

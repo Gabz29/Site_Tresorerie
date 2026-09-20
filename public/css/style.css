@@ -310,6 +310,57 @@ body.page-login {
   background: #f2f2f2;
 }
 
+/* ------------------------------------------------------------ Tableaux --- */
+
+.titre-section {
+  font-size: .95rem;
+  margin: 1.4rem 0 .7rem;
+}
+
+/* Sur écran étroit, c'est le tableau qui défile horizontalement,
+   jamais la page entière. */
+.tableau-conteneur {
+  overflow-x: auto;
+  border: 1px solid #ccc;
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+
+.tableau th,
+.tableau td {
+  padding: .45rem .6rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.tableau th {
+  background: #f7f7f7;
+  font-size: .75rem;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.tableau tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.col-montant {
+  text-align: right;
+}
+
+.recette {
+  color: #1d5c2e;
+}
+
+.depense {
+  color: #8a1a1a;
+}
+
 /* -------------------------------------------------------------- Erreur --- */
 
 .erreur {
