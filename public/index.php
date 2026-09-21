@@ -154,6 +154,45 @@ switch ($page) {
         }
         break;
 
+    case 'transactions':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        (new TransactionController())->index();
+        break;
+
+    case 'transaction-nouvelle':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        (new TransactionController())->create();
+        break;
+
+    case 'transaction-modifier':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        (new TransactionController())->edit();
+        break;
+
+    case 'transaction-enregistrer':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=transactions');
+        }
+        (new TransactionController())->save();
+        break;
+
+    case 'transaction-statut':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=transactions');
+        }
+        (new TransactionController())->changerStatut();
+        break;
+
+    case 'transaction-supprimer':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=transactions');
+        }
+        (new TransactionController())->delete();
+        break;
+
     case 'budgets':
         require_once __DIR__ . '/../app/controllers/BudgetController.php';
         (new BudgetController())->index();

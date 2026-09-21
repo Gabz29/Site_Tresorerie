@@ -75,6 +75,38 @@ class FiscalYear
     }
 
     /**
+     * L'exercice auquel appartient une date, ou null si aucun ne la couvre.
+     *
+     * ⚠ C'EST LA RÈGLE DE RATTACHEMENT DES TRANSACTIONS (cf. schema.sql) :
+     * l'exercice d'une écriture se déduit de sa DATE, jamais de l'exercice
+     * qu'on est en train de consulter ni de l'exercice actif.
+     *
+     * Sans cette règle, saisir une dépense datée de mars 2027 en consultant
+     * l'exercice 2027-2028 la rattacherait à la mauvaise année : les totaux
+     * des DEUX exercices seraient faux, et rien ne le signalerait.
+     *
+     * Renvoie null quand la date ne tombe dans aucun exercice (typiquement
+     * une faute de frappe sur l'année) : l'appelant doit refuser la saisie
+     * plutôt que d'inventer un rattachement.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function trouverParDate(string $date): ?array
+    {
+        $stmt = db()->prepare(
+            'SELECT FiscalYearID, Year, Start_Date, End_Date, IsActive
+             FROM fiscalyear
+             WHERE :date BETWEEN Start_Date AND End_Date
+             LIMIT 1'
+        );
+
+        $stmt->execute([':date' => $date]);
+        $ligne = $stmt->fetch();
+
+        return $ligne === false ? null : $ligne;
+    }
+
+    /**
      * Un exercice porte-t-il déjà ce libellé ?
      */
     public static function libelleExiste(string $libelle): bool

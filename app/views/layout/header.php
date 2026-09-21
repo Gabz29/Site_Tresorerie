@@ -43,7 +43,7 @@ $titre = $titre ?? 'Jumão';
     ?>
     <span class="inactif">Dashboard</span>
     <a class="actif" href="<?= BASE_URL ?>/index.php?page=clubs">Clubs</a>
-    <span class="inactif">Transactions</span>
+    <a href="<?= BASE_URL ?>/index.php?page=transactions">Transactions</a>
     <span class="inactif">Remboursements</span>
 
     <?php

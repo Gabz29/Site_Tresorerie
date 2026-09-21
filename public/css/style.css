@@ -231,6 +231,72 @@ body {
   margin-bottom: 1rem;
 }
 
+/* ---------------------------------------------------------- Filtres --- */
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .5rem .8rem;
+  padding: .8rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  background: #fafafa;
+}
+
+.filtres label {
+  display: block;
+  font-size: .7rem;
+  text-transform: uppercase;
+  color: #777;
+  margin-bottom: .15rem;
+}
+
+.filtres select,
+.filtres input {
+  padding: .3rem;
+  border: 1px solid #ccc;
+  font-size: .8rem;
+  font-family: inherit;
+}
+
+/* Chaque libellé reste solidaire de son champ quand la ligne se replie. */
+.filtre-champ {
+  display: flex;
+  flex-direction: column;
+}
+
+.filtre-champ:last-child {
+  flex-direction: row;
+  gap: .4rem;
+  align-self: end;
+}
+
+.resume-filtres {
+  font-size: .85rem;
+  margin-bottom: .8rem;
+}
+
+/* Colonne d'actions : les boutons restent sur une ligne, séparés. */
+.col-actions {
+  white-space: nowrap;
+}
+
+.col-actions a,
+.col-actions form {
+  display: inline-block;
+  margin-right: .3rem;
+  vertical-align: middle;
+}
+
+.pagination {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: .8rem;
+  font-size: .85rem;
+}
+
 /* Formulaire réduit à un bouton, à l'intérieur d'une cellule de tableau. */
 .form-ligne {
   display: inline;
