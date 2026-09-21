@@ -111,6 +111,16 @@ INSERT INTO fiscalyear (FiscalYearID, `Year`, Start_Date, End_Date, IsActive) VA
 --
 --  IDENTIFIANT DE CONNEXION = l'EMAIL (il n'y a pas de "username").
 --
+--  ⚠ DOMAINE example.com, ET CE N'EST PAS UN OUBLI. Ce domaine est
+--  RÉSERVÉ par la RFC 2606 pour les exemples : aucun message ne peut y
+--  aboutir. Avec un domaine réel, le jour où l'application enverra des
+--  mails (réinitialisation de mot de passe), un simple test avec ces
+--  comptes expédierait de vrais messages vers des adresses inexistantes
+--  — d'où des rebonds, et à la longue une réputation d'expéditeur
+--  dégradée pour le domaine de l'école.
+--  Ne JAMAIS mettre ici les vraies adresses des membres du bureau : le
+--  dépôt est public, et ce qui y est commité ne peut plus être retiré.
+--
 --  MOT DE PASSE : les trois comptes ont le mot de passe  password123
 --  Ce qui est stocké n'est PAS le mot de passe mais son EMPREINTE (hash
 --  bcrypt), calculée avec password_hash(). Un fichier .sql ne pouvant pas
@@ -136,16 +146,16 @@ INSERT INTO fiscalyear (FiscalYearID, `Year`, Start_Date, End_Date, IsActive) VA
 --  « responsable du BDE » : ceux qui gèrent le BDE (P, VP, Trésorier) ont
 --  précisément le rôle bureau.
 INSERT INTO users (UserID, Email, Password, Role, LastName, FirstName, IsAdmin, IsActive, ClubID) VALUES
-  (1, 'jean.dupont@isen-ouest.yncrea.fr',
+  (1, 'jean.dupont@example.com',
       '$2y$10$Ye8IARnb0Wm09ynt68U6IuEbXj21edV7UbYOSqM8dxGzivXXmBYBa',
       'bureau',      'Dupont',  'Jean',    1, 1, NULL),   -- Trésorier BDE
-  (2, 'camille.martin@isen-ouest.yncrea.fr',
+  (2, 'camille.martin@example.com',
       '$2y$10$WdpQOvDj4CCxY.WXK7KFBuSjbAqy89/wI1ulqKnksQHBf71t4JAza',
       'responsable', 'Martin',  'Camille', 0, 1,    2),   -- limitée au Club Robotique
-  (3, 'alex.bernard@isen-ouest.yncrea.fr',
+  (3, 'alex.bernard@example.com',
       '$2y$10$aIjirT1moU83qLglTPTx/uiSzXFXGlft2XIM7KSLgQQITl1MyOoaW',
       'bureau',      'Bernard', 'Alex',    0, 1, NULL),   -- Vice-président BDE
-  (4, 'paul.ancien@isen-ouest.yncrea.fr',
+  (4, 'paul.ancien@example.com',
       '$2y$10$Ye8IARnb0Wm09ynt68U6IuEbXj21edV7UbYOSqM8dxGzivXXmBYBa',
       'bureau',      'Ancien',  'Paul',    0, 0, NULL);   -- bureau précédent
 
@@ -217,16 +227,16 @@ INSERT INTO transactions (TransactionID, `Type`, Amount, `Date`, Description, Pa
 INSERT INTO reimbursements (ReimbursementID, Amount, Purchase_Date, Description, `Status`, Treasurer_Notes, Validation_Date, Beneficiary_FirstName, Beneficiary_LastName, Beneficiary_Email, UserID, ClubID, FiscalYearID, CategoryID, PoleID, TransactionID) VALUES
   (1,  45.80, '2026-09-09', 'Câbles et connecteurs (avance personnelle)', 'en_attente',
       NULL,                                                  NULL,
-      'Camille', 'Martin', 'camille.martin@isen-ouest.yncrea.fr', 2, 2, 2, 1, 2, NULL),
+      'Camille', 'Martin', 'camille.martin@example.com', 2, 2, 2, 1, 2, NULL),
   (2,  23.50, '2026-09-11', 'Cartouches d''encre pour affiches',          'valide',
       'Justificatif conforme, à rembourser au prochain virement', '2026-09-14 10:30:00',
-      'Lucie', 'Moreau', 'lucie.moreau@isen-ouest.yncrea.fr',     1, 3, 2, 5, 5, NULL),
+      'Lucie', 'Moreau', 'lucie.moreau@example.com',     1, 3, 2, 5, 5, NULL),
   (3,  67.00, '2026-09-05', 'Cordes et médiators pour le local',          'rembourse',
       'Remboursé par virement le 13/09',                     '2026-09-13 09:15:00',
-      'Thomas', 'Leroy', 'thomas.leroy@isen-ouest.yncrea.fr',      1, 4, 2, 1, 2, 8),
+      'Thomas', 'Leroy', 'thomas.leroy@example.com',      1, 4, 2, 1, 2, 8),
   (4, 120.00, '2026-09-06', 'Enceinte portable',                          'refuse',
       'Hors budget cette année — à représenter au prochain exercice', '2026-09-12 14:00:00',
-      'Sacha', 'Girard', 'sacha.girard@isen-ouest.yncrea.fr',      1, 4, 2, 1, 3, NULL);
+      'Sacha', 'Girard', 'sacha.girard@example.com',      1, 4, 2, 1, 3, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;   -- réactive les vérifications
 
@@ -238,10 +248,10 @@ SET FOREIGN_KEY_CHECKS = 1;   -- réactive les vérifications
 --    6 clubs (dont 1 archivé, pour tester le filtre IsActive)
 --    2 exercices (2026-2027 actif)
 --    4 utilisateurs — connexion par EMAIL, mot de passe : password123
---      jean.dupont@isen-ouest.yncrea.fr     (bureau + admin)
---      camille.martin@isen-ouest.yncrea.fr  (responsable, club Robotique)
---      alex.bernard@isen-ouest.yncrea.fr    (bureau, sans droit admin)
---      paul.ancien@isen-ouest.yncrea.fr     (DÉSACTIVÉ — doit être refusé)
+--      jean.dupont@example.com     (bureau + admin)
+--      camille.martin@example.com  (responsable, club Robotique)
+--      alex.bernard@example.com    (bureau, sans droit admin)
+--      paul.ancien@example.com     (DÉSACTIVÉ — doit être refusé)
 --    5 budgets sur l'exercice en cours
 --   12 tranches de versement (5 reçues, 7 prévues)
 --    8 transactions

@@ -1,4 +1,36 @@
+# ============================================================================
+#  ⚠ CE DÉPÔT EST PUBLIC. Rien de ce qui est commité ne peut être « repris » :
+#  un fichier effacé plus tard reste visible dans l'historique des commits.
+#  Dans le doute, ne pas commiter — et si un secret part malgré tout, le
+#  considérer comme compromis et le CHANGER, pas seulement le supprimer.
+# ============================================================================
+
+# Identifiants réels de connexion à la base.
 .env
+.env.local
+.env.production
+
+# Variantes de sauvegarde (.env.bak, .env~, config.php.old…) : c'est par là
+# qu'un secret s'échappe le plus souvent, en éditant un fichier à la hâte.
+*.bak
+*.old
+*~
+
+# Exports de base contenant de VRAIES données : noms, montants, emails des
+# membres. Seuls schema.sql et seed.sql (données fictives) sont versionnés.
+*.sql.gz
+*.sql.zip
+dump*.sql
+backup*.sql
+export*.sql
+
+# Fichier source du MCD (JMerise) : seule l'image MCD_BDE.png est versionnée.
+Ressources/MCD_BDE.mcd
+
+# Clés et certificats, si le déploiement en demande un jour.
+*.key
+*.pem
+*.p12
 # Justificatifs envoyés par les utilisateurs : données personnelles et
 # financières, volumineuses, qui n'ont rien à faire dans l'historique Git.
 # Le dossier est HORS de public/ : Apache ne peut pas le servir, les
@@ -15,3 +47,5 @@ Plan_Projet_Jumao.xlsx
 Plan_Projet_Jumao_v1.xlsx
 ~$*
 /.vscode/settings.json
+# Sessions ouvertes par les scripts de vérification : fichiers de travail.
+/tests/.cookies/
