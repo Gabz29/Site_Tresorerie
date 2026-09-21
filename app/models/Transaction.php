@@ -118,12 +118,14 @@ class Transaction
 
         $sql = "SELECT t.TransactionID, t.Type, t.Amount, t.Date, t.Description,
                        t.Payment_Method, t.Status, t.Receipt, t.Notes,
-                       t.ClubID, t.CategoryID,
+                       t.ClubID, t.CategoryID, t.PoleID,
                        cl.Name AS ClubName,
                        ca.Name AS CategoryName,
+                       p.Name  AS PoleName,
                        u.FirstName, u.LastName
                 FROM transactions t
                 INNER JOIN clubs cl ON cl.ClubID = t.ClubID
+                INNER JOIN poles p ON p.PoleID = t.PoleID
                 LEFT  JOIN categories ca ON ca.CategoryID = t.CategoryID
                 LEFT  JOIN users u ON u.UserID = t.UserID
                 {$where}
@@ -235,6 +237,11 @@ class Transaction
             $params[':statut']   = (string) $f['statut'];
         }
 
+        if (!empty($f['pole'])) {
+            $conditions[]     = 't.PoleID = :pole';
+            $params[':pole']  = (int) $f['pole'];
+        }
+
         if (!empty($f['categorie'])) {
             $conditions[]          = 't.CategoryID = :categorie';
             $params[':categorie']  = (int) $f['categorie'];
@@ -296,10 +303,12 @@ class Transaction
                        t.Payment_Method, t.Status, t.Notes,
                        cl.Name AS ClubName,
                        ca.Name AS CategoryName,
+                       p.Name  AS PoleName,
                        u.FirstName, u.LastName,
                        CASE WHEN t.Receipt IS NULL THEN 'non' ELSE 'oui' END AS AvecJustificatif
                 FROM transactions t
                 INNER JOIN clubs cl ON cl.ClubID = t.ClubID
+                INNER JOIN poles p ON p.PoleID = t.PoleID
                 LEFT  JOIN categories ca ON ca.CategoryID = t.CategoryID
                 LEFT  JOIN users u ON u.UserID = t.UserID
                 {$where}
@@ -324,9 +333,10 @@ class Transaction
     public static function findById(int $id): ?array
     {
         $stmt = db()->prepare(
-            'SELECT t.*, cl.Name AS ClubName, ca.Name AS CategoryName
+            'SELECT t.*, cl.Name AS ClubName, ca.Name AS CategoryName, p.Name AS PoleName
              FROM transactions t
              INNER JOIN clubs cl ON cl.ClubID = t.ClubID
+             INNER JOIN poles p ON p.PoleID = t.PoleID
              LEFT  JOIN categories ca ON ca.CategoryID = t.CategoryID
              WHERE t.TransactionID = :id'
         );
@@ -347,10 +357,10 @@ class Transaction
         $stmt = db()->prepare(
             'INSERT INTO transactions
                 (Type, Amount, Date, Description, Payment_Method, Status,
-                 Receipt, Notes, CategoryID, FiscalYearID, UserID, ClubID)
+                 Receipt, Notes, CategoryID, PoleID, FiscalYearID, UserID, ClubID)
              VALUES
                 (:type, :montant, :date, :description, :moyen, :statut,
-                 :recu, :notes, :categorie, :exercice, :user, :club)'
+                 :recu, :notes, :categorie, :pole, :exercice, :user, :club)'
         );
 
         $stmt->execute([
@@ -363,6 +373,7 @@ class Transaction
             ':recu'        => $d['recu'] ?? null,
             ':notes'       => $d['notes'],
             ':categorie'   => $d['categorie'],
+            ':pole'        => $d['pole'],
             ':exercice'    => $d['exercice'],
             // Qui a SAISI la ligne. Jamais modifié ensuite : même si
             // quelqu'un d'autre corrige la transaction, l'auteur de la
@@ -389,7 +400,8 @@ class Transaction
                 Type = :type, Amount = :montant, Date = :date,
                 Description = :description, Payment_Method = :moyen,
                 Status = :statut, Receipt = :recu, Notes = :notes,
-                CategoryID = :categorie, FiscalYearID = :exercice, ClubID = :club
+                CategoryID = :categorie, PoleID = :pole,
+                FiscalYearID = :exercice, ClubID = :club
              WHERE TransactionID = :id'
         );
 
@@ -403,6 +415,7 @@ class Transaction
             ':recu'        => $d['recu'] ?? null,
             ':notes'       => $d['notes'],
             ':categorie'   => $d['categorie'],
+            ':pole'        => $d['pole'],
             ':exercice'    => $d['exercice'],
             ':club'        => $d['club'],
             ':id'          => $id,

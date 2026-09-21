@@ -87,9 +87,24 @@ $val = static fn (string $cle, string $defaut = ''): string
       </select>
     <?php endif; ?>
 
-    <label for="categorie">Catégorie <span class="note">(facultative)</span></label>
-    <select id="categorie" name="categorie">
-      <option value="">— aucune —</option>
+    <label for="pole">Pôle</label>
+    <select id="pole" name="pole" required>
+      <option value="">— choisir —</option>
+      <?php foreach ($poles as $p) : ?>
+        <option value="<?= (int) $p['PoleID'] ?>"
+          <?= (int) ($demande['PoleID'] ?? 0) === (int) $p['PoleID'] ? 'selected' : '' ?>>
+          <?= htmlspecialchars($p['Name']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+    <p class="note">
+      L'équipe pour laquelle l'achat a été fait. La dépense générée au
+      remboursement reprendra ce pôle.
+    </p>
+
+    <label for="categorie">Catégorie</label>
+    <select id="categorie" name="categorie" required>
+      <option value="">— choisir —</option>
       <?php foreach ($categories as $c) : ?>
         <option value="<?= (int) $c['CategoryID'] ?>"
           <?= (int) ($demande['CategoryID'] ?? 0) === (int) $c['CategoryID'] ? 'selected' : '' ?>>

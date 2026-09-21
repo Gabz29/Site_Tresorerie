@@ -104,6 +104,19 @@ $libelleStatut = static fn (string $s): string => match ($s) {
     </div>
 
     <div class="filtre-champ">
+      <label for="f-pole">Pôle</label>
+      <select id="f-pole" name="pole">
+        <option value="">Tous</option>
+        <?php foreach ($poles as $p) : ?>
+          <option value="<?= (int) $p['PoleID'] ?>"
+            <?= (int) $filtres['pole'] === (int) $p['PoleID'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars($p['Name']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+
+    <div class="filtre-champ">
       <label for="f-cat">Catégorie</label>
       <select id="f-cat" name="categorie">
         <option value="">Toutes</option>
@@ -148,6 +161,7 @@ $libelleStatut = static fn (string $s): string => match ($s) {
   $paramsExport = array_filter([
       'page'      => 'transactions-export',
       'club'      => $filtres['club'] ?: null,
+      'pole'      => $filtres['pole'] ?: null,
       'type'      => $filtres['type'] ?: null,
       'statut'    => $filtres['statut'] ?: null,
       'categorie' => $filtres['categorie'] ?: null,
@@ -181,6 +195,7 @@ $libelleStatut = static fn (string $s): string => match ($s) {
           <tr>
             <th>Date</th>
             <th>Club</th>
+            <th>Pôle</th>
             <th>Libellé</th>
             <th>Catégorie</th>
             <th>Statut</th>
@@ -195,6 +210,7 @@ $libelleStatut = static fn (string $s): string => match ($s) {
             <tr class="<?= $t['Status'] === 'annule' ? 'ligne-annulee' : '' ?>">
               <td><?= htmlspecialchars(date('d/m/Y', strtotime($t['Date']))) ?></td>
               <td><?= htmlspecialchars($t['ClubName']) ?></td>
+              <td><?= htmlspecialchars($t['PoleName']) ?></td>
               <td>
                 <?= htmlspecialchars($t['Description']) ?>
                 <?php if (!empty($t['Receipt'])) : ?>
@@ -265,6 +281,7 @@ $libelleStatut = static fn (string $s): string => match ($s) {
           $params = array_filter([
               'page'      => 'transactions',
               'club'      => $filtres['club'] ?: null,
+              'pole'      => $filtres['pole'] ?: null,
               'type'      => $filtres['type'] ?: null,
               'statut'    => $filtres['statut'] ?: null,
               'categorie' => $filtres['categorie'] ?: null,

@@ -49,9 +49,11 @@ class Reimbursement
         }
 
         $sql = 'SELECT r.*, cl.Name AS ClubName, ca.Name AS CategoryName,
+                       p.Name AS PoleName,
                        u.FirstName AS SaisiPrenom, u.LastName AS SaisiNom
                 FROM reimbursements r
                 INNER JOIN clubs cl ON cl.ClubID = r.ClubID
+                INNER JOIN poles p ON p.PoleID = r.PoleID
                 LEFT  JOIN categories ca ON ca.CategoryID = r.CategoryID
                 LEFT  JOIN users u ON u.UserID = r.UserID
                 WHERE ' . implode(' AND ', $conditions) . '
@@ -73,9 +75,10 @@ class Reimbursement
     public static function findById(int $id): ?array
     {
         $stmt = db()->prepare(
-            'SELECT r.*, cl.Name AS ClubName, ca.Name AS CategoryName
+            'SELECT r.*, cl.Name AS ClubName, ca.Name AS CategoryName, p.Name AS PoleName
              FROM reimbursements r
              INNER JOIN clubs cl ON cl.ClubID = r.ClubID
+             INNER JOIN poles p ON p.PoleID = r.PoleID
              LEFT  JOIN categories ca ON ca.CategoryID = r.CategoryID
              WHERE r.ReimbursementID = :id'
         );
@@ -116,11 +119,11 @@ class Reimbursement
             "INSERT INTO reimbursements
                 (Amount, Purchase_Date, Description, Status, Receipt,
                  Beneficiary_FirstName, Beneficiary_LastName, Beneficiary_Email,
-                 UserID, ClubID, FiscalYearID, CategoryID)
+                 UserID, ClubID, FiscalYearID, CategoryID, PoleID)
              VALUES
                 (:montant, :achat, :description, 'en_attente', :recu,
                  :prenom, :nom, :email,
-                 :user, :club, :exercice, :categorie)"
+                 :user, :club, :exercice, :categorie, :pole)"
         );
 
         $stmt->execute([
@@ -135,6 +138,7 @@ class Reimbursement
             ':club'        => $d['club'],
             ':exercice'    => $d['exercice'],
             ':categorie'   => $d['categorie'],
+            ':pole'        => $d['pole'],
         ]);
 
         return (int) db()->lastInsertId();
@@ -153,7 +157,7 @@ class Reimbursement
                 Receipt = :recu,
                 Beneficiary_FirstName = :prenom, Beneficiary_LastName = :nom,
                 Beneficiary_Email = :email, CategoryID = :categorie,
-                ClubID = :club, FiscalYearID = :exercice
+                PoleID = :pole, ClubID = :club, FiscalYearID = :exercice
              WHERE ReimbursementID = :id'
         );
 
@@ -166,6 +170,7 @@ class Reimbursement
             ':nom'         => $d['nom'],
             ':email'       => $d['email'] === '' ? null : $d['email'],
             ':categorie'   => $d['categorie'],
+            ':pole'        => $d['pole'],
             ':club'        => $d['club'],
             ':exercice'    => $d['exercice'],
             ':id'          => $id,

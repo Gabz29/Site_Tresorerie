@@ -23,6 +23,29 @@ CREATE TABLE categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================================
+--  1 bis. POLES  (équipes du bureau : logistique, event, tanière, comm…)
+--
+--     TROIS AXES D'ANALYSE, à ne pas confondre :
+--       clubs      = QUELLE ENTITÉ dépense   (BDE, Robotique, Photo…)
+--       poles      = QUELLE ÉQUIPE dépense   (Logistique, Event, Comm…)
+--       categories = QUELLE NATURE d'achat   (Matériel, Nourriture…)
+--
+--     Le pôle Event achète du matériel (sono) ET de la nourriture (buffet) :
+--     confondre pôle et catégorie ferait perdre l'un des deux axes. On peut
+--     ainsi demander « combien l'Event a-t-il dépensé ? » comme « combien de
+--     nourriture, tous pôles confondus ? ».
+--
+--     Les mêmes pôles valent pour TOUS les clubs, BDE compris.
+-- ============================================================================
+CREATE TABLE poles (
+  PoleID   INT         NOT NULL AUTO_INCREMENT,
+  Name     VARCHAR(50) NOT NULL,
+  IsActive TINYINT(1)  NOT NULL DEFAULT 1,   -- un pôle dissous s'archive
+  CONSTRAINT poles_PK PRIMARY KEY (PoleID),
+  CONSTRAINT poles_Name_UQ UNIQUE (Name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
 --  2. CLUBS  (le BDE lui-même est enregistré comme un club particulier)
 -- ============================================================================
 CREATE TABLE clubs (
@@ -153,16 +176,24 @@ CREATE TABLE transactions (
   Amount         DECIMAL(10,2) NOT NULL,        -- DECIMAL, jamais INT/FLOAT !
   Date           DATE          NOT NULL,
   Description    VARCHAR(255)  NOT NULL,
-  Payment_Method VARCHAR(20)   NULL,            -- virement|carte|especes|cheque
+  Payment_Method VARCHAR(20)   NOT NULL,        -- virement|carte|especes|cheque
   Status         VARCHAR(20)   NOT NULL DEFAULT 'valide',
   Receipt        VARCHAR(250)  NULL,            -- fichier justificatif (optionnel)
   Notes          TEXT          NULL,            -- optionnel
   Created_At     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CategoryID     INT           NULL,
+  -- Catégorie OBLIGATOIRE, comme le pôle : une écriture sans nature
+  -- d'achat rend l'analyse incomplète, et « Divers » existe pour les cas
+  -- qui n'entrent nulle part.
+  CategoryID     INT           NOT NULL,
+  -- PoleID est OBLIGATOIRE : toute écriture est rattachée à une équipe.
+  -- Le pôle « Général » accueille ce qui ne relève d'aucune (subvention
+  -- reçue, frais bancaires, assurance).
+  PoleID         INT           NOT NULL,
   FiscalYearID   INT           NOT NULL,
   UserID         INT           NOT NULL,        -- créateur de la ligne
   ClubID         INT           NOT NULL,        -- BDE = un club
   CONSTRAINT transactions_PK PRIMARY KEY (TransactionID),
+  CONSTRAINT transactions_PoleID_FK       FOREIGN KEY (PoleID)       REFERENCES poles (PoleID),
   CONSTRAINT transactions_CategoryID_FK   FOREIGN KEY (CategoryID)   REFERENCES categories (CategoryID),
   CONSTRAINT transactions_FiscalYearID_FK FOREIGN KEY (FiscalYearID) REFERENCES fiscalyear (FiscalYearID),
   CONSTRAINT transactions_UserID_FK       FOREIGN KEY (UserID)       REFERENCES users (UserID),
@@ -198,9 +229,11 @@ CREATE TABLE reimbursements (
   UserID                INT           NOT NULL, -- qui a saisi la demande
   ClubID                INT           NOT NULL,
   FiscalYearID          INT           NOT NULL,
-  CategoryID            INT           NULL,
+  CategoryID            INT           NOT NULL, -- nature de l'achat avancé
+  PoleID                INT           NOT NULL, -- équipe concernée, comme pour les transactions
   TransactionID         INT           NULL,     -- [option B] généré si remboursé
   CONSTRAINT reimbursements_PK PRIMARY KEY (ReimbursementID),
+  CONSTRAINT reimbursements_PoleID_FK        FOREIGN KEY (PoleID)        REFERENCES poles (PoleID),
   CONSTRAINT reimbursements_UserID_FK        FOREIGN KEY (UserID)        REFERENCES users (UserID),
   CONSTRAINT reimbursements_ClubID_FK        FOREIGN KEY (ClubID)        REFERENCES clubs (ClubID),
   CONSTRAINT reimbursements_FiscalYearID_FK  FOREIGN KEY (FiscalYearID)  REFERENCES fiscalyear (FiscalYearID),

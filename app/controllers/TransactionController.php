@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../models/Transaction.php';
 require_once __DIR__ . '/../models/Category.php';
+require_once __DIR__ . '/../models/Pole.php';
 require_once __DIR__ . '/../models/Club.php';
 require_once __DIR__ . '/../models/FiscalYear.php';
 require_once __DIR__ . '/../config/fichiers.php';
@@ -66,6 +67,7 @@ class TransactionController
         $aucunExercice = false;
         $clubs         = Club::getAll();
         $categories    = Category::getAll();
+        $poles         = Pole::getAll();
         $flash         = lire_flash();
 
         require __DIR__ . '/../views/transactions/index.php';
@@ -83,6 +85,7 @@ class TransactionController
         $erreur      = '';
         $clubs       = $this->clubsAutorises();
         $categories  = Category::getAll();
+        $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/transactions/form.php';
     }
@@ -100,6 +103,7 @@ class TransactionController
         $erreur     = '';
         $clubs      = $this->clubsAutorises();
         $categories = Category::getAll();
+        $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/transactions/form.php';
     }
@@ -154,6 +158,7 @@ class TransactionController
             $transaction = $this->saisieVersFormulaire($id, $donnees);
             $clubs       = $this->clubsAutorises();
             $categories  = Category::getAll();
+            $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/transactions/form.php';
             return;
@@ -173,6 +178,7 @@ class TransactionController
             $transaction = $this->saisieVersFormulaire($id, $donnees);
             $clubs       = $this->clubsAutorises();
             $categories  = Category::getAll();
+            $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/transactions/form.php';
             return;
@@ -302,7 +308,7 @@ class TransactionController
         fwrite($sortie, "\xEF\xBB\xBF");
 
         fputcsv($sortie, [
-            'Date', 'Club', 'Type', 'Montant', 'Libellé', 'Catégorie',
+            'Date', 'Club', 'Pôle', 'Type', 'Montant', 'Libellé', 'Catégorie',
             'Moyen de paiement', 'Statut', 'Justificatif', 'Saisi par', 'Notes',
         ], ';');
 
@@ -310,6 +316,7 @@ class TransactionController
             fputcsv($sortie, [
                 date('d/m/Y', strtotime((string) $t['Date'])),
                 $this->cellule((string) $t['ClubName']),
+                $this->cellule((string) $t['PoleName']),
                 $t['Type'] === 'depense' ? 'Dépense' : 'Recette',
                 /*
                  * ⚠ 2. VIRGULE DÉCIMALE.
@@ -458,9 +465,10 @@ class TransactionController
              * d'ailleurs la contrainte qui a attrapé le problème au premier
              * test — le code, lui, l'aurait laissé passer.
              */
-            'categorie'   => trim((string) ($_POST['categorie'] ?? '')) === ''
-                                ? null
-                                : (int) $_POST['categorie'],
+            'categorie'   => (int) ($_POST['categorie'] ?? 0),
+            // Le pôle est OBLIGATOIRE : toute écriture est rattachée à une
+            // équipe, « Général » servant à ce qui ne relève d'aucune.
+            'pole'        => (int) ($_POST['pole'] ?? 0),
             'club'        => $this->clubPourSaisie(),
             'exercice'    => 0,   // renseigné après lecture de la date
         ];
@@ -522,12 +530,19 @@ class TransactionController
             return 'Statut inconnu.';
         }
 
-        if ($d['moyen'] !== '' && !in_array($d['moyen'], Transaction::MOYENS_PAIEMENT, true)) {
-            return 'Moyen de paiement inconnu.';
+        // Moyen de paiement et catégorie sont OBLIGATOIRES, au même titre
+        // que le pôle : une écriture incomplète rend l'analyse bancale, et
+        // « Divers » existe pour ce qui n'entre dans aucune catégorie.
+        if (!in_array($d['moyen'], Transaction::MOYENS_PAIEMENT, true)) {
+            return 'Choisissez un moyen de paiement.';
         }
 
-        if ($d['categorie'] !== null && !Category::existe((int) $d['categorie'])) {
-            return 'Catégorie inconnue.';
+        if ($d['categorie'] <= 0 || !Category::existe($d['categorie'])) {
+            return 'Choisissez une catégorie.';
+        }
+
+        if ($d['pole'] <= 0 || !Pole::existe($d['pole'])) {
+            return 'Choisissez un pôle.';
         }
 
         return '';
@@ -552,6 +567,7 @@ class TransactionController
             'Status'         => $d['statut'],
             'Notes'          => $d['notes'],
             'CategoryID'     => $d['categorie'],
+            'PoleID'         => $d['pole'],
             'ClubID'         => $d['club'],
         ];
     }
@@ -624,6 +640,7 @@ class TransactionController
             // est ignorée plutôt que transmise telle quelle à la requête.
             'type'      => in_array($type, ['depense', 'recette'], true) ? $type : '',
             'statut'    => in_array($statut, Transaction::STATUTS, true) ? $statut : '',
+            'pole'      => (int) ($_GET['pole'] ?? 0),
             'categorie' => (int) ($_GET['categorie'] ?? 0),
             'du'        => $this->dateOuVide((string) ($_GET['du'] ?? '')),
             'au'        => $this->dateOuVide((string) ($_GET['au'] ?? '')),

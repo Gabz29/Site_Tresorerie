@@ -99,9 +99,39 @@ $val = static fn (string $cle, string $defaut = ''): string
       </select>
     <?php endif; ?>
 
-    <label for="categorie">Catégorie <span class="note">(facultative)</span></label>
-    <select id="categorie" name="categorie">
-      <option value="">— aucune —</option>
+    <?php
+    /*
+     * TROIS AXES À NE PAS CONFONDRE, tous OBLIGATOIRES :
+     *   le club      = quelle entité dépense
+     *   le pôle      = quelle équipe dépense
+     *   la catégorie = quelle nature d'achat
+     *
+     * Le pôle Event peut acheter du matériel comme de la nourriture : les
+     * deux informations sont utiles et indépendantes.
+     *
+     * Aucun des trois n'est facultatif : une écriture incomplète rend
+     * l'analyse bancale, et il existe un choix « neutre » de chaque côté
+     * (pôle « Général », catégorie « Divers ») pour les cas inclassables.
+     */
+    ?>
+    <label for="pole">Pôle</label>
+    <select id="pole" name="pole" required>
+      <option value="">— choisir —</option>
+      <?php foreach ($poles as $p) : ?>
+        <option value="<?= (int) $p['PoleID'] ?>"
+          <?= (int) ($transaction['PoleID'] ?? 0) === (int) $p['PoleID'] ? 'selected' : '' ?>>
+          <?= htmlspecialchars($p['Name']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+    <p class="note">
+      L'équipe concernée. « Général » pour ce qui ne relève d'aucun pôle
+      (subvention reçue, frais bancaires…).
+    </p>
+
+    <label for="categorie">Catégorie</label>
+    <select id="categorie" name="categorie" required>
+      <option value="">— choisir —</option>
       <?php foreach ($categories as $c) : ?>
         <option value="<?= (int) $c['CategoryID'] ?>"
           data-type="<?= htmlspecialchars($c['Type']) ?>"
@@ -111,9 +141,9 @@ $val = static fn (string $cle, string $defaut = ''): string
       <?php endforeach; ?>
     </select>
 
-    <label for="moyen">Moyen de paiement <span class="note">(facultatif)</span></label>
-    <select id="moyen" name="moyen">
-      <option value="">— non précisé —</option>
+    <label for="moyen">Moyen de paiement</label>
+    <select id="moyen" name="moyen" required>
+      <option value="">— choisir —</option>
       <?php foreach (Transaction::MOYENS_PAIEMENT as $m) : ?>
         <option value="<?= $m ?>" <?= $val('Payment_Method') === $m ? 'selected' : '' ?>>
           <?= htmlspecialchars(ucfirst($m)) ?>

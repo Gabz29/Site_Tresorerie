@@ -63,7 +63,9 @@ demarrer_session();
  *  ?page[]=clubs fait arriver un TABLEAU dans $_GET['page']. Sans ce contrôle,
  *  la comparaison plus bas se comporterait de façon imprévisible.
  */
-$page = $_GET['page'] ?? 'clubs';
+// Le tableau de bord est la page d'accueil : c'est la vue d'ensemble
+// attendue en arrivant, plutôt que la liste des clubs.
+$page = $_GET['page'] ?? 'dashboard';
 
 if (!is_string($page)) {
     $page = '';
@@ -152,6 +154,11 @@ switch ($page) {
         } else {
             (new AuthController())->showLogin();
         }
+        break;
+
+    case 'dashboard':
+        require_once __DIR__ . '/../app/controllers/DashboardController.php';
+        (new DashboardController())->index();
         break;
 
     case 'transactions':

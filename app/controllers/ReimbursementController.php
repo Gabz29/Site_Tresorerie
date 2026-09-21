@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../models/Reimbursement.php';
 require_once __DIR__ . '/../models/Transaction.php';
 require_once __DIR__ . '/../models/Category.php';
+require_once __DIR__ . '/../models/Pole.php';
 require_once __DIR__ . '/../models/Club.php';
 require_once __DIR__ . '/../models/FiscalYear.php';
 require_once __DIR__ . '/../config/fichiers.php';
@@ -70,6 +71,7 @@ class ReimbursementController
         $erreur     = '';
         $clubs      = $this->clubsAutorises();
         $categories = Category::getAll();
+        $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/remboursements/form.php';
     }
@@ -94,6 +96,7 @@ class ReimbursementController
         $erreur     = '';
         $clubs      = $this->clubsAutorises();
         $categories = Category::getAll();
+        $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/remboursements/form.php';
     }
@@ -140,6 +143,7 @@ class ReimbursementController
             $demande    = $this->saisieVersFormulaire($id, $donnees);
             $clubs      = $this->clubsAutorises();
             $categories = Category::getAll();
+            $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/remboursements/form.php';
             return;
@@ -155,6 +159,7 @@ class ReimbursementController
             $demande    = $this->saisieVersFormulaire($id, $donnees);
             $clubs      = $this->clubsAutorises();
             $categories = Category::getAll();
+            $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/remboursements/form.php';
             return;
@@ -290,7 +295,10 @@ class ReimbursementController
                 'statut'    => 'valide',
                 'recu'      => copier_justificatif($demande['Receipt']),
                 'notes'     => 'Généré par la demande de remboursement n°' . (int) $demande['ReimbursementID'],
-                'categorie' => $demande['CategoryID'] !== null ? (int) $demande['CategoryID'] : null,
+                'categorie' => (int) $demande['CategoryID'],
+                // La dépense hérite du pôle de la demande : c'est la même
+                // équipe qui a engagé l'achat.
+                'pole'      => (int) $demande['PoleID'],
                 'exercice'  => (int) $exercice['FiscalYearID'],
                 'user'      => (int) $_SESSION['user_id'],
                 // Le club du remboursement, jamais celui de l'utilisateur
@@ -380,9 +388,8 @@ class ReimbursementController
             'nom'         => trim((string) ($_POST['nom'] ?? '')),
             'email'       => trim((string) ($_POST['email'] ?? '')),
             'recu'        => null,   // renseigné après traitement du fichier
-            'categorie'   => trim((string) ($_POST['categorie'] ?? '')) === ''
-                                ? null
-                                : (int) $_POST['categorie'],
+            'categorie'   => (int) ($_POST['categorie'] ?? 0),
+            'pole'        => (int) ($_POST['pole'] ?? 0),
             'club'        => $this->clubPourSaisie(),
             'exercice'    => 0,
         ];
@@ -444,8 +451,12 @@ class ReimbursementController
             return 'Choisissez un club.';
         }
 
-        if ($d['categorie'] !== null && !Category::existe((int) $d['categorie'])) {
-            return 'Catégorie inconnue.';
+        if ($d['categorie'] <= 0 || !Category::existe($d['categorie'])) {
+            return 'Choisissez une catégorie.';
+        }
+
+        if ($d['pole'] <= 0 || !Pole::existe($d['pole'])) {
+            return 'Choisissez un pôle.';
         }
 
         return '';
@@ -466,6 +477,7 @@ class ReimbursementController
             'Beneficiary_LastName'  => $d['nom'],
             'Beneficiary_Email'     => $d['email'],
             'CategoryID'            => $d['categorie'],
+            'PoleID'                => $d['pole'],
             'ClubID'                => $d['club'],
             'Status'                => 'en_attente',
         ];

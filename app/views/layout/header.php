@@ -45,8 +45,8 @@ $titre = $titre ?? 'Jumão';
      * Chaque entrée deviendra un lien au fur et à mesure des tâches 2.x.
      */
     ?>
-    <span class="inactif">Dashboard</span>
-    <a class="actif" href="<?= BASE_URL ?>/index.php?page=clubs">Clubs</a>
+    <a href="<?= BASE_URL ?>/index.php?page=dashboard">Tableau de bord</a>
+    <a href="<?= BASE_URL ?>/index.php?page=clubs">Clubs</a>
     <a href="<?= BASE_URL ?>/index.php?page=transactions">Transactions</a>
     <?php
     /*

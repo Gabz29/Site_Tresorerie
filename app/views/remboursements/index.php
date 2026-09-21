@@ -94,6 +94,7 @@ $libelle = static fn (string $s): string => match ($s) {
             <?= htmlspecialchars($d['Description']) ?>
             <span class="note">
               le <?= htmlspecialchars(date('d/m/Y', strtotime($d['Purchase_Date']))) ?>
+              · pôle <?= htmlspecialchars($d['PoleName']) ?>
               <?php if (!empty($d['CategoryName'])) : ?>
                 · <?= htmlspecialchars($d['CategoryName']) ?>
               <?php endif; ?>

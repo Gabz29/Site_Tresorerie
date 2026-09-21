@@ -34,21 +34,51 @@ DELETE FROM users;
 DELETE FROM fiscalyear;
 DELETE FROM clubs;
 DELETE FROM categories;
+DELETE FROM poles;
+
+-- ============================================================================
+--  0. POLES — les équipes du bureau, communes à tous les clubs
+--
+--  « Général » est le pôle fourre-tout, nécessaire puisque le pôle est
+--  OBLIGATOIRE sur chaque écriture : une subvention reçue ou des frais
+--  bancaires ne relèvent d'aucune équipe opérationnelle.
+-- ============================================================================
+INSERT INTO poles (PoleID, Name, IsActive) VALUES
+  (1, 'Général',    1),
+  (2, 'Logistique', 1),
+  (3, 'Event',      1),
+  (4, 'Tanière',    1),
+  (5, 'Comm',       1);
 
 -- ============================================================================
 --  1. CATEGORIES
 --  Type : 'depense' | 'recette' | 'both'
+--
+--  ⚠ UNE CATÉGORIE DIT CE QUI A ÉTÉ ACHETÉ, jamais pour quelle équipe :
+--  cette seconde information est portée par le PÔLE. Un disque dur acheté
+--  pour l'event est « Matériel » avec le pôle Event ; des flyers pour une
+--  soirée sont « Impression & goodies » avec ce même pôle.
+--
+--  Les anciennes catégories « Événement » et « Communication » ont donc été
+--  remplacées le 21/09/2026 : elles faisaient doublon avec les pôles Event
+--  et Comm, et une écriture « pôle Event + catégorie Événement » n'apportait
+--  aucune information.
 -- ============================================================================
 INSERT INTO categories (CategoryID, Name, `Type`) VALUES
-  (1, 'Matériel',             'depense'),
-  (2, 'Événement',            'depense'),
-  (3, 'Nourriture & boissons','depense'),
-  (4, 'Transport',            'depense'),
-  (5, 'Communication',        'depense'),
-  (6, 'Subvention',           'recette'),
-  (7, 'Cotisation',           'recette'),
-  (8, 'Buvette & ventes',     'recette'),
-  (9, 'Divers',               'both');
+  -- Dépenses
+  (1,  'Matériel',                'depense'),  -- disque dur, sono, composants
+  (2,  'Location & prestations',  'depense'),  -- salle, DJ, prestataire
+  (3,  'Nourriture & boissons',   'depense'),  -- buffets, courses
+  (4,  'Transport',               'depense'),  -- déplacements, essence
+  (5,  'Impression & goodies',    'depense'),  -- flyers, affiches, t-shirts
+  (10, 'Licences & assurances',   'depense'),  -- licences sportives, fédérations
+  (11, 'Frais bancaires',         'depense'),  -- tenue de compte, commissions
+  -- Recettes
+  (6,  'Subvention',              'recette'),  -- CVEC, école, collectivités
+  (7,  'Cotisations',             'recette'),  -- adhésions des membres
+  (8,  'Ventes & buvette',        'recette'),  -- soirées, goodies revendus
+  -- Les deux
+  (9,  'Divers',                  'both');     -- ce qui n'entre nulle part
 
 -- ============================================================================
 --  2. CLUBS
@@ -161,15 +191,16 @@ INSERT INTO disbursements (DisbursementID, `Number`, Planned_Amount, Actual_Amou
 --  qui donne le sens, jamais le signe du montant.
 --  La transaction 8 est celle générée par un remboursement (voir section 8).
 -- ============================================================================
-INSERT INTO transactions (TransactionID, `Type`, Amount, `Date`, Description, Payment_Method, `Status`, Receipt, Notes, CategoryID, FiscalYearID, UserID, ClubID) VALUES
-  (1, 'depense',  245.50, '2026-09-08', 'Achat composants électroniques',        'virement', 'valide', NULL, NULL,                          1, 2, 2, 2),
-  (2, 'depense',   89.90, '2026-09-10', 'Pizzas réunion de rentrée',             'carte',    'valide', NULL, NULL,                          3, 2, 1, 1),
-  (3, 'recette', 2000.00, '2026-09-12', 'Subvention BDE — tranche 1',            'virement', 'valide', NULL, 'Versement école reçu',        6, 2, 1, 1),
-  (4, 'depense',  156.00, '2026-09-15', 'Location salle pour concert',           'virement', 'valide', NULL, NULL,                          2, 2, 1, 4),
-  (5, 'depense',   42.30, '2026-09-16', 'Tirages photo exposition',              'carte',    'valide', NULL, NULL,                          1, 2, 1, 3),
-  (6, 'recette',  320.00, '2026-09-17', 'Buvette soirée de rentrée',             'especes',  'valide', NULL, 'Recette nette',               8, 2, 1, 1),
-  (7, 'depense',   78.00, '2026-09-18', 'Licences fédération sport',             'virement', 'valide', NULL, NULL,                          9, 2, 1, 5),
-  (8, 'depense',   67.00, '2026-09-13', 'Remb. T. Leroy — cordes et médiators',  'virement', 'valide', NULL, 'Généré par le remb. n°3',     1, 2, 1, 4);
+--  Rappel des pôles : 1 Général · 2 Logistique · 3 Event · 4 Tanière · 5 Comm
+INSERT INTO transactions (TransactionID, `Type`, Amount, `Date`, Description, Payment_Method, `Status`, Receipt, Notes, CategoryID, PoleID, FiscalYearID, UserID, ClubID) VALUES
+  (1, 'depense',  245.50, '2026-09-08', 'Achat composants électroniques',        'virement', 'valide', NULL, NULL,                          1, 2, 2, 2, 2),
+  (2, 'depense',   89.90, '2026-09-10', 'Pizzas réunion de rentrée',             'carte',    'valide', NULL, NULL,                          3, 3, 2, 1, 1),
+  (3, 'recette', 2000.00, '2026-09-12', 'Subvention BDE — tranche 1',            'virement', 'valide', NULL, 'Versement école reçu',        6, 1, 2, 1, 1),
+  (4, 'depense',  156.00, '2026-09-15', 'Location salle pour concert',           'virement', 'valide', NULL, NULL,                          2, 3, 2, 1, 4),
+  (5, 'depense',   42.30, '2026-09-16', 'Tirages photo exposition',              'carte',    'valide', NULL, NULL,                          5, 5, 2, 1, 3),
+  (6, 'recette',  320.00, '2026-09-17', 'Buvette soirée de rentrée',             'especes',  'valide', NULL, 'Recette nette',               8, 4, 2, 1, 1),
+  (7, 'depense',   78.00, '2026-09-18', 'Licences fédération sport',             'virement', 'valide', NULL, NULL,                         10, 1, 2, 1, 5),
+  (8, 'depense',   67.00, '2026-09-13', 'Remb. T. Leroy — cordes et médiators',  'virement', 'valide', NULL, 'Généré par le remb. n°3',     1, 2, 2, 1, 4);
 
 -- ============================================================================
 --  8. REIMBURSEMENTS — demandes de remboursement
@@ -183,19 +214,19 @@ INSERT INTO transactions (TransactionID, `Type`, Amount, `Date`, Description, Pa
 --  Le bénéficiaire (qui a avancé l'argent) est du texte libre : il peut ne pas
 --  avoir de compte dans l'application. UserID est celui qui a SAISI la demande.
 -- ============================================================================
-INSERT INTO reimbursements (ReimbursementID, Amount, Purchase_Date, Description, `Status`, Treasurer_Notes, Validation_Date, Beneficiary_FirstName, Beneficiary_LastName, Beneficiary_Email, UserID, ClubID, FiscalYearID, CategoryID, TransactionID) VALUES
+INSERT INTO reimbursements (ReimbursementID, Amount, Purchase_Date, Description, `Status`, Treasurer_Notes, Validation_Date, Beneficiary_FirstName, Beneficiary_LastName, Beneficiary_Email, UserID, ClubID, FiscalYearID, CategoryID, PoleID, TransactionID) VALUES
   (1,  45.80, '2026-09-09', 'Câbles et connecteurs (avance personnelle)', 'en_attente',
       NULL,                                                  NULL,
-      'Camille', 'Martin', 'camille.martin@isen-ouest.yncrea.fr', 2, 2, 2, 1, NULL),
+      'Camille', 'Martin', 'camille.martin@isen-ouest.yncrea.fr', 2, 2, 2, 1, 2, NULL),
   (2,  23.50, '2026-09-11', 'Cartouches d''encre pour affiches',          'valide',
       'Justificatif conforme, à rembourser au prochain virement', '2026-09-14 10:30:00',
-      'Lucie', 'Moreau', 'lucie.moreau@isen-ouest.yncrea.fr',     1, 3, 2, 5, NULL),
+      'Lucie', 'Moreau', 'lucie.moreau@isen-ouest.yncrea.fr',     1, 3, 2, 5, 5, NULL),
   (3,  67.00, '2026-09-05', 'Cordes et médiators pour le local',          'rembourse',
       'Remboursé par virement le 13/09',                     '2026-09-13 09:15:00',
-      'Thomas', 'Leroy', 'thomas.leroy@isen-ouest.yncrea.fr',      1, 4, 2, 1, 8),
+      'Thomas', 'Leroy', 'thomas.leroy@isen-ouest.yncrea.fr',      1, 4, 2, 1, 2, 8),
   (4, 120.00, '2026-09-06', 'Enceinte portable',                          'refuse',
       'Hors budget cette année — à représenter au prochain exercice', '2026-09-12 14:00:00',
-      'Sacha', 'Girard', 'sacha.girard@isen-ouest.yncrea.fr',      1, 4, 2, 1, NULL);
+      'Sacha', 'Girard', 'sacha.girard@isen-ouest.yncrea.fr',      1, 4, 2, 1, 3, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;   -- réactive les vérifications
 

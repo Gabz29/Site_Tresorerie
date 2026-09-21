@@ -623,6 +623,145 @@ body.page-login {
   color: #8a1a1a;
 }
 
+/* ------------------------------------------------------- Tableau de bord --- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .8rem;
+  margin-bottom: .8rem;
+}
+
+.kpi {
+  border: 1px solid #ccc;
+  padding: .8rem 1rem;
+}
+
+.kpi-valeur {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.kpi-libelle {
+  font-size: .75rem;
+  text-transform: uppercase;
+  color: #777;
+  margin-top: .2rem;
+}
+
+.kpi-alerte {
+  border-color: #e0b4b4;
+  background: #fdf0f0;
+}
+
+.bloc-large {
+  max-width: none;
+}
+
+/* Deux colonnes côte à côte, empilées sur écran étroit. */
+.colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.colonnes .bloc {
+  max-width: none;
+}
+
+.liste-alertes {
+  list-style: none;
+  font-size: .85rem;
+}
+
+.liste-alertes li {
+  padding: .3rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.liste-alertes li:last-child {
+  border-bottom: none;
+}
+
+/* --------------------------------------------------- Graphiques CSS --- */
+
+/* Une barre est un simple div dont la largeur est un pourcentage :
+   aucune bibliothèque, rien à charger, et cela s'imprime correctement. */
+.graphe {
+  font-size: .8rem;
+}
+
+.graphe-ligne {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 7.5rem;
+  gap: .5rem;
+  align-items: center;
+  padding: .2rem 0;
+}
+
+.graphe-label {
+  color: #555;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graphe-barres {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.barre {
+  height: 9px;
+  min-width: 1px;   /* une valeur non nulle reste visible */
+  border-radius: 2px;
+}
+
+.barre-recette {
+  background: #2f7d46;
+}
+
+.barre-depense {
+  background: #a83232;
+}
+
+.graphe-valeur {
+  text-align: right;
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+.puce {
+  display: inline-block;
+  width: .6rem;
+  height: .6rem;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.puce-recette {
+  background: #2f7d46;
+}
+
+.puce-depense {
+  background: #a83232;
+}
+
+@media (max-width: 560px) {
+  .graphe-ligne {
+    grid-template-columns: 4.5rem 1fr;
+  }
+
+  /* Sur mobile, la colonne des montants passe sous la barre. */
+  .graphe-valeur {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
 /* -------------------------------------------------------------- Erreur --- */
 
 .erreur {
