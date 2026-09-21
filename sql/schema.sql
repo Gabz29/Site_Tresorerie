@@ -171,9 +171,17 @@ CREATE TABLE transactions (
 
 -- ============================================================================
 --  8. REIMBURSEMENTS  (demandes de remboursement)
---     - saisi par un membre du bureau (UserID)
+--     - saisi par un membre du bureau OU par le responsable du club (UserID)
 --     - bénéficiaire = qui a avancé l'argent (texte libre, peut ne pas avoir de compte)
 --     - TransactionID (nullable) = transaction générée une fois remboursé  [option B]
+--
+--     Receipt : AJOUTÉ le 21/09/2026, oublié dans la première version.
+--     C'est pourtant LE cas d'usage évident du justificatif : on ne
+--     rembourse pas quelqu'un sur parole, on lui demande son ticket. Sans
+--     cette colonne, le bureau acceptait ou refusait à l'aveugle.
+--     Au paiement, le fichier est RECOPIÉ sur la transaction générée, et
+--     non partagé : sinon retirer le justificatif de la demande ferait
+--     disparaître celui de la dépense, qui se retrouverait sans pièce.
 -- ============================================================================
 CREATE TABLE reimbursements (
   ReimbursementID       INT           NOT NULL AUTO_INCREMENT,
@@ -181,6 +189,7 @@ CREATE TABLE reimbursements (
   Purchase_Date         DATE          NOT NULL, -- date de l'achat avancé
   Description           VARCHAR(250)  NOT NULL,
   Status                VARCHAR(20)   NOT NULL DEFAULT 'en_attente', -- en_attente|valide|refuse|rembourse
+  Receipt               VARCHAR(250)  NULL,     -- justificatif de l'achat avancé
   Treasurer_Notes       TEXT          NULL,     -- optionnel
   Validation_Date       DATETIME      NULL,     -- NULL tant que pas traité
   Beneficiary_FirstName VARCHAR(50)   NOT NULL, -- qui a avancé l'argent

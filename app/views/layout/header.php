@@ -16,6 +16,10 @@
  */
 declare(strict_types=1);
 
+// Le menu affiche le nombre de demandes en attente : le modèle doit donc
+// être disponible ici, quelle que soit la page qui inclut ce gabarit.
+require_once __DIR__ . '/../../models/Reimbursement.php';
+
 $titre = $titre ?? 'Jumão';
 ?>
 <!DOCTYPE html>
@@ -44,7 +48,23 @@ $titre = $titre ?? 'Jumão';
     <span class="inactif">Dashboard</span>
     <a class="actif" href="<?= BASE_URL ?>/index.php?page=clubs">Clubs</a>
     <a href="<?= BASE_URL ?>/index.php?page=transactions">Transactions</a>
-    <span class="inactif">Remboursements</span>
+    <?php
+    /*
+     * Pastille du nombre de demandes en attente : ce sont les seules qui
+     * réclament une action. Un responsable ne compte que celles de son
+     * club, le bureau toutes.
+     */
+    $layoutExerciceId = exercice_consulte_id();
+    $layoutEnAttente  = $layoutExerciceId === null ? 0 : Reimbursement::compterEnAttente(
+        $layoutExerciceId,
+        est_bureau() ? 0 : (int) ($_SESSION['club_id'] ?? 0)
+    );
+    ?>
+    <a href="<?= BASE_URL ?>/index.php?page=remboursements">
+      Remboursements<?php if ($layoutEnAttente > 0) : ?>
+        <span class="pastille"><?= $layoutEnAttente ?></span>
+      <?php endif; ?>
+    </a>
 
     <?php
     /*

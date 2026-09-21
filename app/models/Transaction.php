@@ -279,6 +279,44 @@ class Transaction
     }
 
     /**
+     * Toutes les transactions correspondant aux filtres, sans pagination.
+     *
+     * Réservé à l'export : la page web, elle, pagine toujours. On ajoute le
+     * moyen de paiement et l'auteur de la saisie, utiles dans un tableur
+     * mais trop détaillés pour l'écran.
+     *
+     * @param array<string,mixed> $f
+     * @return array<int,array<string,mixed>>
+     */
+    public static function pourExport(array $f): array
+    {
+        [$where, $params] = self::construireFiltres($f);
+
+        $sql = "SELECT t.TransactionID, t.Date, t.Type, t.Amount, t.Description,
+                       t.Payment_Method, t.Status, t.Notes,
+                       cl.Name AS ClubName,
+                       ca.Name AS CategoryName,
+                       u.FirstName, u.LastName,
+                       CASE WHEN t.Receipt IS NULL THEN 'non' ELSE 'oui' END AS AvecJustificatif
+                FROM transactions t
+                INNER JOIN clubs cl ON cl.ClubID = t.ClubID
+                LEFT  JOIN categories ca ON ca.CategoryID = t.CategoryID
+                LEFT  JOIN users u ON u.UserID = t.UserID
+                {$where}
+                ORDER BY t.Date, t.TransactionID";
+
+        $stmt = db()->prepare($sql);
+
+        foreach ($params as $cle => $valeur) {
+            $stmt->bindValue($cle, $valeur);
+        }
+
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Une transaction par son identifiant, avec les libellés joints.
      *
      * @return array<string,mixed>|null
@@ -350,8 +388,8 @@ class Transaction
             'UPDATE transactions SET
                 Type = :type, Amount = :montant, Date = :date,
                 Description = :description, Payment_Method = :moyen,
-                Status = :statut, Notes = :notes, CategoryID = :categorie,
-                FiscalYearID = :exercice, ClubID = :club
+                Status = :statut, Receipt = :recu, Notes = :notes,
+                CategoryID = :categorie, FiscalYearID = :exercice, ClubID = :club
              WHERE TransactionID = :id'
         );
 
@@ -362,12 +400,25 @@ class Transaction
             ':description' => $d['description'],
             ':moyen'       => $d['moyen'],
             ':statut'      => $d['statut'],
+            ':recu'        => $d['recu'] ?? null,
             ':notes'       => $d['notes'],
             ':categorie'   => $d['categorie'],
             ':exercice'    => $d['exercice'],
             ':club'        => $d['club'],
             ':id'          => $id,
         ]);
+    }
+
+    /**
+     * Efface la référence au justificatif, sans toucher au reste.
+     */
+    public static function retirerJustificatif(int $id): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE transactions SET Receipt = NULL WHERE TransactionID = :id'
+        );
+
+        $stmt->execute([':id' => $id]);
     }
 
     /**

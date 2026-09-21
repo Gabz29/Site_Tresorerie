@@ -159,6 +159,11 @@ switch ($page) {
         (new TransactionController())->index();
         break;
 
+    case 'transactions-export':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        (new TransactionController())->export();
+        break;
+
     case 'transaction-nouvelle':
         require_once __DIR__ . '/../app/controllers/TransactionController.php';
         (new TransactionController())->create();
@@ -185,12 +190,77 @@ switch ($page) {
         (new TransactionController())->changerStatut();
         break;
 
+    case 'justificatif':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        (new TransactionController())->justificatif();
+        break;
+
+    case 'justificatif-supprimer':
+        require_once __DIR__ . '/../app/controllers/TransactionController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=transactions');
+        }
+        (new TransactionController())->supprimerJustificatif();
+        break;
+
     case 'transaction-supprimer':
         require_once __DIR__ . '/../app/controllers/TransactionController.php';
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             rediriger('?page=transactions');
         }
         (new TransactionController())->delete();
+        break;
+
+    case 'remboursements':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        (new ReimbursementController())->index();
+        break;
+
+    case 'remboursement-nouveau':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        (new ReimbursementController())->create();
+        break;
+
+    case 'remboursement-modifier':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        (new ReimbursementController())->edit();
+        break;
+
+    case 'remboursement-enregistrer':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=remboursements');
+        }
+        (new ReimbursementController())->save();
+        break;
+
+    case 'remboursement-justificatif':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        (new ReimbursementController())->justificatif();
+        break;
+
+    case 'remboursement-decider':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=remboursements');
+        }
+        (new ReimbursementController())->decider();
+        break;
+
+    case 'remboursement-payer':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=remboursements');
+        }
+        (new ReimbursementController())->payer();
+        break;
+
+    case 'remboursement-supprimer':
+        require_once __DIR__ . '/../app/controllers/ReimbursementController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=remboursements');
+        }
+        (new ReimbursementController())->delete();
         break;
 
     case 'budgets':

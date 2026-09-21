@@ -571,6 +571,50 @@ body.page-login {
   background: #fdf8ee;
 }
 
+/* Pastille du menu : nombre de demandes en attente. */
+.pastille {
+  display: inline-block;
+  min-width: 1.1rem;
+  padding: 0 .25rem;
+  border-radius: .6rem;
+  background: #8a5a1a;
+  color: #fff;
+  font-size: .7rem;
+  text-align: center;
+  line-height: 1.1rem;
+}
+
+/* ----------------------------------------------- Demandes de remb. --- */
+
+.demande h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+
+/* Une demande refusée ou déjà payée n'appelle plus d'action : on
+   l'estompe pour que l'œil aille d'abord sur celles en attente. */
+.demande-refuse,
+.demande-rembourse {
+  opacity: .7;
+}
+
+.actions-demande {
+  margin-top: .8rem;
+  padding-top: .8rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: flex-end;
+}
+
+.actions-demande form {
+  flex: 1;
+  min-width: 240px;
+}
+
 .recette {
   color: #1d5c2e;
 }

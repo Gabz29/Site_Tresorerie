@@ -138,11 +138,35 @@ $libelleStatut = static fn (string $s): string => match ($s) {
     </div>
   </form>
 
+  <?php
+  /*
+   * L'export reprend les filtres affichés : on recopie les critères
+   * courants dans le lien. Exporter « ce que je vois » est le
+   * comportement attendu — sinon on obtiendrait toujours tout l'exercice,
+   * quel que soit le filtre appliqué.
+   */
+  $paramsExport = array_filter([
+      'page'      => 'transactions-export',
+      'club'      => $filtres['club'] ?: null,
+      'type'      => $filtres['type'] ?: null,
+      'statut'    => $filtres['statut'] ?: null,
+      'categorie' => $filtres['categorie'] ?: null,
+      'du'        => $filtres['du'] ?: null,
+      'au'        => $filtres['au'] ?: null,
+      'q'         => $filtres['q'] ?: null,
+  ]);
+  ?>
   <p class="resume-filtres">
     <strong><?= (int) $total ?></strong> transaction(s) —
     recettes <span class="recette"><?= $euros($totaux['recettes']) ?></span>,
     dépenses <span class="depense"><?= $euros($totaux['depenses']) ?></span>
     <span class="note">(validées uniquement, sur l'ensemble du résultat)</span>
+    <?php if ($total > 0) : ?>
+      &nbsp;·&nbsp;
+      <a href="<?= BASE_URL ?>/index.php?<?= htmlspecialchars(http_build_query($paramsExport)) ?>">
+        Exporter en CSV
+      </a>
+    <?php endif; ?>
   </p>
 
   <?php if ($transactions === []) : ?>
@@ -171,7 +195,13 @@ $libelleStatut = static fn (string $s): string => match ($s) {
             <tr class="<?= $t['Status'] === 'annule' ? 'ligne-annulee' : '' ?>">
               <td><?= htmlspecialchars(date('d/m/Y', strtotime($t['Date']))) ?></td>
               <td><?= htmlspecialchars($t['ClubName']) ?></td>
-              <td><?= htmlspecialchars($t['Description']) ?></td>
+              <td>
+                <?= htmlspecialchars($t['Description']) ?>
+                <?php if (!empty($t['Receipt'])) : ?>
+                  <a href="<?= BASE_URL ?>/index.php?page=justificatif&amp;id=<?= (int) $t['TransactionID'] ?>"
+                     target="_blank" rel="noopener" title="Voir le justificatif">📎</a>
+                <?php endif; ?>
+              </td>
               <td><?= $t['CategoryName'] !== null ? htmlspecialchars($t['CategoryName']) : '—' ?></td>
               <td>
                 <?= htmlspecialchars($libelleStatut($t['Status'])) ?>

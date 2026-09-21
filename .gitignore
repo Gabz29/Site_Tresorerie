@@ -1,4 +1,13 @@
 .env
+# Justificatifs envoyés par les utilisateurs : données personnelles et
+# financières, volumineuses, qui n'ont rien à faire dans l'historique Git.
+# Le dossier est HORS de public/ : Apache ne peut pas le servir, les
+# fichiers ne sont accessibles que via ?page=justificatif, qui vérifie
+# les droits. Le .gitkeep garde le dossier présent après un clone.
+/uploads/*
+!/uploads/.gitkeep
+
+# Ancien emplacement, conservé au cas où des fichiers y traînent encore.
 /public/uploads/*
 !/public/uploads/.gitkeep
 Notes_Perso.txt

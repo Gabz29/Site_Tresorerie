@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/Transaction.php';
 require_once __DIR__ . '/../models/Category.php';
 require_once __DIR__ . '/../models/Club.php';
 require_once __DIR__ . '/../models/FiscalYear.php';
+require_once __DIR__ . '/../config/fichiers.php';
 
 /**
  * ============================================================================
@@ -158,11 +159,44 @@ class TransactionController
             return;
         }
 
+        /*
+         * Justificatif — traité APRÈS la validation des autres champs.
+         *
+         * Inutile de déplacer un fichier de 8 Mo sur le disque pour
+         * découvrir ensuite que le montant est invalide et tout annuler.
+         */
+        $nouveauFichier = enregistrer_justificatif($_FILES['justificatif'] ?? null, $erreurFichier);
+
+        if ($erreurFichier !== null) {
+            $titre       = $id > 0 ? 'Modifier la transaction' : 'Nouvelle transaction';
+            $erreur      = $erreurFichier;
+            $transaction = $this->saisieVersFormulaire($id, $donnees);
+            $clubs       = $this->clubsAutorises();
+            $categories  = Category::getAll();
+
+            require __DIR__ . '/../views/transactions/form.php';
+            return;
+        }
+
         if ($id > 0) {
+            $ancien = Transaction::findById($id);
+
+            // Un nouveau justificatif remplace l'ancien, qui n'a plus de
+            // raison d'occuper le disque. On ne l'efface qu'une fois le
+            // nouveau bien enregistré.
+            $donnees['recu'] = $nouveauFichier ?? $ancien['Receipt'];
+
             Transaction::update($id, $donnees);
+
+            if ($nouveauFichier !== null && !empty($ancien['Receipt'])) {
+                supprimer_justificatif($ancien['Receipt']);
+            }
+
             message_flash('succes', 'La transaction a été modifiée.');
         } else {
             $donnees['user'] = (int) $_SESSION['user_id'];
+            $donnees['recu'] = $nouveauFichier;
+
             $id = Transaction::create($donnees);
             message_flash('succes', 'La transaction a été enregistrée.');
         }
@@ -225,6 +259,175 @@ class TransactionController
 
         message_flash('succes', 'La transaction a été supprimée.');
         rediriger('?page=transactions');
+    }
+
+    /**
+     * Export CSV du résultat courant — URL : ?page=transactions-export
+     *
+     * Reprend EXACTEMENT les mêmes filtres que la page affichée, y compris
+     * la restriction de club : un responsable n'exporte que son club, même
+     * en manipulant l'URL.
+     */
+    public function export(): void
+    {
+        $exercice = exercice_consulte();
+
+        if ($exercice === null) {
+            rediriger('?page=transactions');
+        }
+
+        $filtres      = $this->filtresDepuisUrl((int) $exercice['FiscalYearID']);
+        $transactions = Transaction::pourExport($filtres);
+
+        $nomFichier = sprintf(
+            'transactions-%s-%s.csv',
+            preg_replace('/[^\w-]/', '', (string) $exercice['Year']),
+            date('Ymd')
+        );
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $nomFichier . '"');
+        header('Cache-Control: private, no-store');
+
+        $sortie = fopen('php://output', 'wb');
+
+        /*
+         * ⚠ 1. LE BOM UTF-8 (trois octets invisibles en tête de fichier).
+         *
+         * Sans lui, Excel sous Windows suppose que le fichier est encodé
+         * dans le jeu de caractères local et non en UTF-8 : « Réunion »
+         * s'affiche « RÃ©union ». Le BOM lui indique explicitement l'UTF-8.
+         * LibreOffice et les autres tableurs s'en accommodent sans problème.
+         */
+        fwrite($sortie, "\xEF\xBB\xBF");
+
+        fputcsv($sortie, [
+            'Date', 'Club', 'Type', 'Montant', 'Libellé', 'Catégorie',
+            'Moyen de paiement', 'Statut', 'Justificatif', 'Saisi par', 'Notes',
+        ], ';');
+
+        foreach ($transactions as $t) {
+            fputcsv($sortie, [
+                date('d/m/Y', strtotime((string) $t['Date'])),
+                $this->cellule((string) $t['ClubName']),
+                $t['Type'] === 'depense' ? 'Dépense' : 'Recette',
+                /*
+                 * ⚠ 2. VIRGULE DÉCIMALE.
+                 * MySQL renvoie « 245.50 ». Excel en configuration française
+                 * attend « 245,50 » : avec un point, il lirait du texte et
+                 * refuserait toute somme sur la colonne.
+                 */
+                number_format((float) $t['Amount'], 2, ',', ''),
+                $this->cellule((string) $t['Description']),
+                $this->cellule((string) ($t['CategoryName'] ?? '')),
+                (string) ($t['Payment_Method'] ?? ''),
+                $this->libelleStatut((string) $t['Status']),
+                (string) $t['AvecJustificatif'],
+                $this->cellule(trim(($t['FirstName'] ?? '') . ' ' . ($t['LastName'] ?? ''))),
+                $this->cellule((string) ($t['Notes'] ?? '')),
+            ], ';');
+        }
+
+        fclose($sortie);
+        exit;
+    }
+
+    /**
+     * Neutralise une cellule susceptible d'être interprétée comme formule.
+     *
+     * ⚠ 3. INJECTION DE FORMULE — le piège le moins connu des exports CSV.
+     *
+     * Un tableur interprète comme une FORMULE toute cellule commençant par
+     * =, +, - ou @. Un libellé de transaction saisi « =1+1 » afficherait 2
+     * au lieu du texte ; des formules plus élaborées peuvent lire d'autres
+     * cellules, appeler une adresse extérieure, voire déclencher l'exécution
+     * d'une commande selon les réglages du poste.
+     *
+     * Le danger est réel ici : les libellés et les notes sont saisis par les
+     * utilisateurs, et le fichier sera ouvert par le trésorier sur son
+     * ordinateur. On préfixe donc d'une apostrophe, que le tableur
+     * comprend comme « ceci est du texte » et n'affiche pas.
+     */
+    private function cellule(string $valeur): string
+    {
+        if ($valeur !== '' && str_contains('=+-@', $valeur[0])) {
+            return "'" . $valeur;
+        }
+
+        return $valeur;
+    }
+
+    private function libelleStatut(string $statut): string
+    {
+        return match ($statut) {
+            'valide'     => 'Validée',
+            'en_attente' => 'En attente',
+            'annule'     => 'Annulée',
+            default      => $statut,
+        };
+    }
+
+    /**
+     * Envoie le justificatif d'une transaction — URL : ?page=justificatif&id=5
+     *
+     * ⚠ C'EST ICI QUE SE JOUE LA CONFIDENTIALITÉ DES PIÈCES COMPTABLES.
+     *
+     * Les fichiers sont stockés hors de la racine web : Apache ne peut pas
+     * les servir, et aucune URL ne mène directement à eux. Ce script est le
+     * seul chemin d'accès, et il vérifie d'abord la connexion (le routeur)
+     * puis le droit sur le club (transactionAutorisee).
+     *
+     * Une facture porte des noms, des montants, parfois un RIB : elle
+     * mérite le même cloisonnement que le reste de l'application.
+     */
+    public function justificatif(): void
+    {
+        $transaction = $this->transactionAutorisee((int) ($_GET['id'] ?? 0));
+
+        if (empty($transaction['Receipt'])) {
+            http_response_code(404);
+            require __DIR__ . '/../views/errors/404.php';
+            return;
+        }
+
+        /*
+         * Nom proposé au téléchargement, reconstruit à partir de la
+         * transaction plutôt que conservé depuis l'envoi : on obtient des
+         * fichiers cohérents pour l'archivage — justificatif-12-2026-10-05.pdf
+         * — au lieu de « IMG_4821.jpg ».
+         */
+        $extension  = pathinfo((string) $transaction['Receipt'], PATHINFO_EXTENSION);
+        $nomAffiche = sprintf(
+            'justificatif-%d-%s.%s',
+            (int) $transaction['TransactionID'],
+            $transaction['Date'],
+            $extension
+        );
+
+        envoyer_justificatif((string) $transaction['Receipt'], $nomAffiche);
+    }
+
+    /**
+     * Retire le justificatif d'une transaction (requête POST).
+     */
+    public function supprimerJustificatif(): void
+    {
+        verifier_csrf();
+        $this->exigerExerciceOuvert();
+
+        $transaction = $this->transactionAutorisee((int) ($_POST['id'] ?? 0));
+        $id          = (int) $transaction['TransactionID'];
+
+        if (!empty($transaction['Receipt'])) {
+            // La base d'abord, le disque ensuite : si la suppression du
+            // fichier échouait, mieux vaut un fichier orphelin sur le
+            // disque qu'une transaction pointant vers un fichier absent.
+            Transaction::retirerJustificatif($id);
+            supprimer_justificatif((string) $transaction['Receipt']);
+        }
+
+        message_flash('succes', 'Le justificatif a été retiré.');
+        rediriger('?page=transaction-modifier&id=' . $id);
     }
 
     // ------------------------------------------------------------------

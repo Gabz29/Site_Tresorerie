@@ -28,7 +28,15 @@ $val = static fn (string $cle, string $defaut = ''): string
 <?php endif; ?>
 
 <section class="bloc">
-  <form method="post" action="<?= BASE_URL ?>/index.php?page=transaction-enregistrer">
+  <?php
+  /*
+   * enctype="multipart/form-data" est INDISPENSABLE dès qu'un formulaire
+   * contient un champ fichier. Sans lui, le navigateur n'envoie que le NOM
+   * du fichier, pas son contenu : $_FILES arrive vide, sans aucune erreur.
+   */
+  ?>
+  <form method="post" enctype="multipart/form-data"
+        action="<?= BASE_URL ?>/index.php?page=transaction-enregistrer">
     <?= champ_csrf() ?>
     <input type="hidden" name="id" value="<?= (int) ($transaction['TransactionID'] ?? 0) ?>">
 
@@ -126,6 +134,41 @@ $val = static fn (string $cle, string $defaut = ''): string
       </option>
     </select>
 
+    <label for="justificatif">Justificatif <span class="note">(facultatif)</span></label>
+    <?php
+    /*
+     * MAX_FILE_SIZE est une indication pour le navigateur, qui peut
+     * interrompre l'envoi tôt. Ce n'est EN AUCUN CAS une protection : elle
+     * se contourne en une seconde. La vraie limite est vérifiée côté
+     * serveur, dans enregistrer_justificatif().
+     */
+    ?>
+    <input type="hidden" name="MAX_FILE_SIZE" value="<?= justificatif_taille_max() ?>">
+    <input type="file" id="justificatif" name="justificatif"
+           accept=".pdf,.jpg,.jpeg,.png,.webp,.heic">
+    <p class="note">
+      PDF ou image, <?= htmlspecialchars(justificatif_taille_max_lisible()) ?> maximum.
+      Les photos trop grandes sont réduites automatiquement avant l'envoi.
+    </p>
+    <?php
+    /*
+     * Zone renseignée par public/js/app.js pendant la réduction d'une
+     * photo. Vide par défaut : sans JavaScript, elle reste invisible et
+     * le formulaire fonctionne normalement — le serveur refusera
+     * simplement les fichiers trop lourds, avec un message explicite.
+     */
+    ?>
+    <p class="note" id="etat-justificatif" role="status"></p>
+
+    <?php if ($estModification && !empty($transaction['Receipt'])) : ?>
+      <p class="note">
+        Justificatif actuel :
+        <a href="<?= BASE_URL ?>/index.php?page=justificatif&amp;id=<?= (int) $transaction['TransactionID'] ?>"
+           target="_blank" rel="noopener">consulter</a>
+        — en envoyer un nouveau le remplacera.
+      </p>
+    <?php endif; ?>
+
     <label for="notes">Notes <span class="note">(facultatif)</span></label>
     <textarea id="notes" name="notes" rows="2"><?= $val('Notes') ?></textarea>
 
@@ -134,5 +177,24 @@ $val = static fn (string $cle, string $defaut = ''): string
     </button>
   </form>
 </section>
+
+<?php if ($estModification && !empty($transaction['Receipt'])) : ?>
+  <?php
+  /*
+   * Formulaire séparé, placé HORS du précédent : le HTML interdit
+   * d'imbriquer un formulaire dans un autre. Deux actions distinctes
+   * appellent donc deux formulaires côte à côte.
+   */
+  ?>
+  <section class="bloc">
+    <h2>Retirer le justificatif</h2>
+    <form method="post" action="<?= BASE_URL ?>/index.php?page=justificatif-supprimer"
+          onsubmit="return confirm('Retirer définitivement ce justificatif ?');">
+      <?= champ_csrf() ?>
+      <input type="hidden" name="id" value="<?= (int) $transaction['TransactionID'] ?>">
+      <button type="submit" class="btn">Retirer le justificatif</button>
+    </form>
+  </section>
+<?php endif; ?>
 
 <?php require __DIR__ . '/../layout/footer.php'; ?>
