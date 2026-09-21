@@ -59,7 +59,7 @@ $titre = $titre ?? 'Jumão';
     <?php if (est_bureau()) : ?>
       <hr>
       <div class="section-titre">Bureau BDE</div>
-      <span class="inactif">Budgets</span>
+      <a href="<?= BASE_URL ?>/index.php?page=budgets">Budgets</a>
       <a href="<?= BASE_URL ?>/index.php?page=exercices">Exercices</a>
     <?php endif; ?>
 

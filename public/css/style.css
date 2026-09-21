@@ -241,6 +241,32 @@ body {
   font-size: .75rem;
 }
 
+/* Formulaires d'action compacts, dans une cellule de tableau. */
+.form-tranche {
+  display: flex;
+  gap: .25rem;
+  align-items: center;
+  margin-bottom: .25rem;
+  white-space: nowrap;
+}
+
+.form-tranche .mini {
+  padding: .15rem .3rem;
+  border: 1px solid #ccc;
+  font-size: .75rem;
+  font-family: inherit;
+  width: 7rem;
+}
+
+.bloc select {
+  width: 100%;
+  padding: .4rem;
+  margin-top: .25rem;
+  border: 1px solid #ccc;
+  font-size: .85rem;
+  font-family: inherit;
+}
+
 /* Un lien qui doit avoir l'apparence d'un bouton. */
 a.btn {
   display: inline-block;
@@ -433,6 +459,50 @@ body.page-login {
 
 .col-montant {
   text-align: right;
+}
+
+.tableau tfoot th {
+  background: #f7f7f7;
+  border-top: 2px solid #ccc;
+  text-transform: none;
+  font-size: .85rem;
+  color: #222;
+}
+
+/* Lignes signalées : un fond discret, jamais la couleur seule — un écran
+   mal réglé ou un daltonisme ne doivent pas faire perdre l'information,
+   d'où le badge textuel qui accompagne toujours la couleur. */
+.ligne-rouge {
+  background: #fdf0f0;
+}
+
+.ligne-orange {
+  background: #fdf8ee;
+}
+
+.ligne-annulee {
+  color: #999;
+  text-decoration: line-through;
+}
+
+.badge {
+  display: inline-block;
+  padding: .05rem .35rem;
+  font-size: .7rem;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.badge-rouge {
+  color: #8a1a1a;
+  border-color: #e0b4b4;
+  background: #fdf0f0;
+}
+
+.badge-orange {
+  color: #8a5a1a;
+  border-color: #e0cdb4;
+  background: #fdf8ee;
 }
 
 .recette {

@@ -154,6 +154,53 @@ switch ($page) {
         }
         break;
 
+    case 'budgets':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        (new BudgetController())->index();
+        break;
+
+    case 'budget':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        (new BudgetController())->show();
+        break;
+
+    case 'budget-nouveau':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        (new BudgetController())->create();
+        break;
+
+    case 'budget-enregistrer':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=budgets');
+        }
+        (new BudgetController())->save();
+        break;
+
+    case 'tranche-versee':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=budgets');
+        }
+        (new BudgetController())->marquerRecu();
+        break;
+
+    case 'tranche-annulee':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=budgets');
+        }
+        (new BudgetController())->annulerTranche();
+        break;
+
+    case 'tranche-rouverte':
+        require_once __DIR__ . '/../app/controllers/BudgetController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=budgets');
+        }
+        (new BudgetController())->rouvrirTranche();
+        break;
+
     case 'exercice-consulter':
         // Changer l'exercice qu'on REGARDE. Accessible à tous — cela ne
         // modifie aucune donnée, seulement l'affichage de sa propre session.

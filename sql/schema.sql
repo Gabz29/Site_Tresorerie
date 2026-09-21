@@ -116,6 +116,17 @@ CREATE TABLE budgets (
 
 -- ============================================================================
 --  6. DISBURSEMENTS  (tranches de versement ; réel NULL tant que non reçu)
+--
+--     Rythme habituel : clubs = mi-octobre et fin janvier (2 tranches) ;
+--     BDE = octobre, décembre, février, juin (4 tranches). Le BDE encaisse
+--     la CVEC en octobre, puis répartit et échelonne vers les clubs.
+--
+--     Status 'annule' : le BDE se réserve le droit de NE PAS verser une
+--     tranche à un club inactif, et de réattribuer la somme à un club
+--     motivé. Sans ce troisième état, il faudrait soit laisser la tranche
+--     éternellement en 'prevu' (elle gonflerait indéfiniment le budget
+--     théorique du club), soit la supprimer — et perdre la trace de la
+--     décision. Notes sert à en garder le motif.
 -- ============================================================================
 CREATE TABLE disbursements (
   DisbursementID INT           NOT NULL AUTO_INCREMENT,
@@ -124,7 +135,8 @@ CREATE TABLE disbursements (
   Actual_Amount  DECIMAL(10,2) NULL,            -- reçu (NULL si pas encore versé)
   Planned_Date   DATE          NOT NULL,
   Actual_Date    DATE          NULL,            -- NULL tant que pas reçu
-  Status         VARCHAR(20)   NOT NULL DEFAULT 'prevu', -- 'prevu' | 'recu'
+  Status         VARCHAR(20)   NOT NULL DEFAULT 'prevu', -- 'prevu'|'recu'|'annule'
+  Notes          TEXT          NULL,            -- motif d'annulation, remarques
   BudgetID       INT           NOT NULL,
   CONSTRAINT disbursements_PK PRIMARY KEY (DisbursementID),
   CONSTRAINT disbursements_BudgetID_FK FOREIGN KEY (BudgetID) REFERENCES budgets (BudgetID)
