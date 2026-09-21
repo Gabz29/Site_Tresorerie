@@ -97,6 +97,25 @@ if (!in_array($page, $pagesPubliques, true)) {
 
 /**
  * ----------------------------------------------------------------------------
+ *  Mot de passe temporaire : changement imposé
+ * ----------------------------------------------------------------------------
+ *  Après une création de compte ou une réinitialisation, l'administrateur
+ *  connaît le mot de passe — il vient de le dicter. Tant qu'il n'a pas été
+ *  changé, toute navigation ramène à la page « Mon compte ».
+ *
+ *  Le contrôle est ici, dans le routeur, et non page par page : un oubli
+ *  laisserait sinon une porte ouverte, sans que rien ne le signale. Même
+ *  raisonnement que pour exiger_connexion() plus haut.
+ */
+$pagesToleree = ['profil', 'logout'];
+
+if (est_connecte() && doit_changer_mot_de_passe() && !in_array($page, $pagesToleree, true)) {
+    message_flash('erreur', 'Votre mot de passe est temporaire : choisissez-en un nouveau pour continuer.');
+    rediriger('?page=profil');
+}
+
+/**
+ * ----------------------------------------------------------------------------
  *  AIGUILLAGE — liste blanche des pages autorisées
  * ----------------------------------------------------------------------------
  *  ⚠ POINT DE SÉCURITÉ ESSENTIEL ⚠
@@ -351,6 +370,58 @@ switch ($page) {
             rediriger('?page=exercices');
         }
         (new FiscalYearController())->activate();
+        break;
+
+    case 'utilisateurs':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        (new AdminController())->index();
+        break;
+
+    case 'utilisateur-nouveau':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        (new AdminController())->create();
+        break;
+
+    case 'utilisateur-modifier':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        (new AdminController())->edit();
+        break;
+
+    case 'utilisateur-enregistrer':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=utilisateurs');
+        }
+        (new AdminController())->save();
+        break;
+
+    case 'utilisateur-reinitialiser':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=utilisateurs');
+        }
+        (new AdminController())->reinitialiser();
+        break;
+
+    case 'references':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        (new AdminController())->references();
+        break;
+
+    case 'categorie-enregistrer':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=references');
+        }
+        (new AdminController())->enregistrerCategorie();
+        break;
+
+    case 'pole-enregistrer':
+        require_once __DIR__ . '/../app/controllers/AdminController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=references');
+        }
+        (new AdminController())->enregistrerPole();
         break;
 
     case 'profil':

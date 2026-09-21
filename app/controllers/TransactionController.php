@@ -84,7 +84,7 @@ class TransactionController
         $transaction = null;
         $erreur      = '';
         $clubs       = $this->clubsAutorises();
-        $categories  = Category::getAll();
+        $categories  = Category::getActives();
         $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/transactions/form.php';
@@ -102,7 +102,7 @@ class TransactionController
         $titre      = 'Modifier la transaction';
         $erreur     = '';
         $clubs      = $this->clubsAutorises();
-        $categories = Category::getAll();
+        $categories = Category::getActives();
         $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/transactions/form.php';
@@ -157,7 +157,7 @@ class TransactionController
             $titre       = $id > 0 ? 'Modifier la transaction' : 'Nouvelle transaction';
             $transaction = $this->saisieVersFormulaire($id, $donnees);
             $clubs       = $this->clubsAutorises();
-            $categories  = Category::getAll();
+            $categories  = Category::getActives();
             $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/transactions/form.php';
@@ -177,7 +177,7 @@ class TransactionController
             $erreur      = $erreurFichier;
             $transaction = $this->saisieVersFormulaire($id, $donnees);
             $clubs       = $this->clubsAutorises();
-            $categories  = Category::getAll();
+            $categories  = Category::getActives();
             $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/transactions/form.php';

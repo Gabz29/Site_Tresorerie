@@ -108,6 +108,7 @@ class AuthController
         $_SESSION['nom']      = $user['LastName'];
         $_SESSION['club_id']  = $user['ClubID'] !== null ? (int) $user['ClubID'] : null;
         $_SESSION['is_admin'] = ((int) $user['IsAdmin']) === 1;
+        $_SESSION['must_change_password'] = ((int) $user['MustChangePassword']) === 1;
 
         /*
          * Redirection après un POST réussi ("POST puis redirection vers GET").
@@ -208,6 +209,11 @@ class AuthController
         }
 
         User::updateMotDePasse($id, password_hash($nouveau, PASSWORD_DEFAULT));
+
+        // La personne a choisi son propre mot de passe : l'obligation
+        // imposée à la création du compte est levée.
+        User::motDePasseChange($id);
+        unset($_SESSION['must_change_password']);
 
         /*
          * Changer de mot de passe change les droits d'accès au compte : on

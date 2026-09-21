@@ -70,7 +70,7 @@ class ReimbursementController
         $demande    = null;
         $erreur     = '';
         $clubs      = $this->clubsAutorises();
-        $categories = Category::getAll();
+        $categories = Category::getActives();
         $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/remboursements/form.php';
@@ -95,7 +95,7 @@ class ReimbursementController
         $titre      = 'Modifier la demande';
         $erreur     = '';
         $clubs      = $this->clubsAutorises();
-        $categories = Category::getAll();
+        $categories = Category::getActives();
         $poles      = Pole::getActifs();
 
         require __DIR__ . '/../views/remboursements/form.php';
@@ -142,7 +142,7 @@ class ReimbursementController
             $titre      = $id > 0 ? 'Modifier la demande' : 'Nouvelle demande de remboursement';
             $demande    = $this->saisieVersFormulaire($id, $donnees);
             $clubs      = $this->clubsAutorises();
-            $categories = Category::getAll();
+            $categories = Category::getActives();
             $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/remboursements/form.php';
@@ -158,7 +158,7 @@ class ReimbursementController
             $erreur     = $erreurFichier;
             $demande    = $this->saisieVersFormulaire($id, $donnees);
             $clubs      = $this->clubsAutorises();
-            $categories = Category::getAll();
+            $categories = Category::getActives();
             $poles      = Pole::getActifs();
 
             require __DIR__ . '/../views/remboursements/form.php';

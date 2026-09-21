@@ -115,6 +115,18 @@ function utilisateur_courant(): ?array
  */
 
 /**
+ * L'utilisateur doit-il choisir un nouveau mot de passe ?
+ *
+ * Vrai après une création de compte ou une réinitialisation par
+ * l'administrateur : le mot de passe temporaire a été transmis de vive
+ * voix, il ne doit pas rester en usage.
+ */
+function doit_changer_mot_de_passe(): bool
+{
+    return !empty($_SESSION['must_change_password']);
+}
+
+/**
  * L'utilisateur fait-il partie du bureau BDE (P, VP, Trésorier) ?
  */
 function est_bureau(): bool

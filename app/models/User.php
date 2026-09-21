@@ -34,7 +34,8 @@ class User
         // Le contrôleur vérifiera d'abord le mot de passe, et ne parlera de
         // compte désactivé qu'ensuite — voir AuthController::login().
         $stmt = db()->prepare(
-            'SELECT UserID, Email, Password, Role, LastName, FirstName, IsAdmin, IsActive, ClubID
+            'SELECT UserID, Email, Password, Role, LastName, FirstName, IsAdmin, IsActive,
+                    MustChangePassword, ClubID
              FROM users
              WHERE Email = :email'
         );
@@ -47,29 +48,147 @@ class User
     }
 
     /**
-     * Met à jour le nom et le prénom d'un compte.
+     * Tous les comptes, actifs d'abord, avec le nom de leur club.
      *
-     * ⚠ PAS ENCORE APPELÉE : elle sera utilisée par AdminController
-     * (tâche 2.10). Un utilisateur ne peut PAS modifier son propre nom
-     * depuis la page « Mon compte » — cette application est un registre
-     * comptable : le nom indique qui a saisi quelle transaction, et des
-     * changements libres en cours d'année rendraient l'historique illisible
-     * et la passation invérifiable. Seul l'administrateur corrige une
-     * identité, comme il gère l'email, le rôle et le club.
+     * @return array<int,array<string,mixed>>
      */
-    public static function updateIdentite(int $id, string $prenom, string $nom): void
+    public static function getAll(): array
+    {
+        return db()->query(
+            'SELECT u.UserID, u.Email, u.Role, u.LastName, u.FirstName,
+                    u.IsAdmin, u.IsActive, u.MustChangePassword, u.Created_At,
+                    u.ClubID, c.Name AS ClubName
+             FROM users u
+             LEFT JOIN clubs c ON c.ClubID = u.ClubID
+             ORDER BY u.IsActive DESC, u.LastName, u.FirstName'
+        )->fetchAll();
+    }
+
+    /**
+     * Cet email est-il déjà utilisé par un autre compte ?
+     *
+     * Double la contrainte users_Email_UQ : ici pour un message clair, en
+     * base pour la garantie.
+     */
+    public static function emailExiste(string $email, ?int $exclureId = null): bool
+    {
+        $sql = 'SELECT COUNT(*) FROM users WHERE Email = :email';
+
+        if ($exclureId !== null) {
+            $sql .= ' AND UserID <> :id';
+        }
+
+        $stmt = db()->prepare($sql);
+        $stmt->bindValue(':email', $email);
+
+        if ($exclureId !== null) {
+            $stmt->bindValue(':id', $exclureId, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+
+        return ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    /**
+     * Nombre d'administrateurs encore actifs.
+     *
+     * Sert à empêcher le dernier d'entre eux de se retirer ses propres
+     * droits ou de désactiver son compte : plus personne ne pourrait alors
+     * créer d'accès, et il faudrait intervenir directement en base.
+     */
+    public static function compterAdminsActifs(): int
+    {
+        return (int) db()->query(
+            'SELECT COUNT(*) FROM users WHERE IsAdmin = 1 AND IsActive = 1'
+        )->fetchColumn();
+    }
+
+    /**
+     * Crée un compte et renvoie son identifiant.
+     *
+     * Reçoit le mot de passe EN CLAIR et le hache ici : c'est le seul
+     * endroit où il transite, et il n'est jamais écrit tel quel en base.
+     *
+     * @param array<string,mixed> $d
+     */
+    public static function create(array $d): int
     {
         $stmt = db()->prepare(
-            'UPDATE users
-             SET FirstName = :prenom, LastName = :nom
+            'INSERT INTO users
+                (Email, Password, Role, LastName, FirstName,
+                 IsAdmin, IsActive, MustChangePassword, ClubID)
+             VALUES
+                (:email, :mdp, :role, :nom, :prenom,
+                 :admin, 1, 1, :club)'
+        );
+
+        $stmt->execute([
+            ':email'  => $d['email'],
+            ':mdp'    => password_hash($d['motdepasse'], PASSWORD_DEFAULT),
+            ':role'   => $d['role'],
+            ':nom'    => $d['nom'],
+            ':prenom' => $d['prenom'],
+            ':admin'  => $d['admin'] ? 1 : 0,
+            ':club'   => $d['club'],
+        ]);
+
+        return (int) db()->lastInsertId();
+    }
+
+    /**
+     * Met à jour un compte (hors mot de passe).
+     *
+     * @param array<string,mixed> $d
+     */
+    public static function updateCompte(int $id, array $d): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE users SET
+                Email = :email, Role = :role, LastName = :nom, FirstName = :prenom,
+                IsAdmin = :admin, IsActive = :actif, ClubID = :club
              WHERE UserID = :id'
         );
 
         $stmt->execute([
-            ':prenom' => $prenom,
-            ':nom'    => $nom,
+            ':email'  => $d['email'],
+            ':role'   => $d['role'],
+            ':nom'    => $d['nom'],
+            ':prenom' => $d['prenom'],
+            ':admin'  => $d['admin'] ? 1 : 0,
+            ':actif'  => $d['actif'] ? 1 : 0,
+            ':club'   => $d['club'],
             ':id'     => $id,
         ]);
+    }
+
+    /**
+     * Réinitialise le mot de passe et impose son changement à la connexion.
+     */
+    public static function reinitialiserMotDePasse(int $id, string $motDePasse): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE users SET Password = :mdp, MustChangePassword = 1 WHERE UserID = :id'
+        );
+
+        $stmt->execute([
+            ':mdp' => password_hash($motDePasse, PASSWORD_DEFAULT),
+            ':id'  => $id,
+        ]);
+    }
+
+    /**
+     * Lève l'obligation de changer de mot de passe.
+     *
+     * Appelée après que la personne en a choisi un elle-même.
+     */
+    public static function motDePasseChange(int $id): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE users SET MustChangePassword = 0 WHERE UserID = :id'
+        );
+
+        $stmt->execute([':id' => $id]);
     }
 
     /**
@@ -118,7 +237,8 @@ class User
     public static function findById(int $id): ?array
     {
         $stmt = db()->prepare(
-            'SELECT UserID, Email, Role, LastName, FirstName, ClubID
+            'SELECT UserID, Email, Role, LastName, FirstName, IsAdmin, IsActive,
+                    MustChangePassword, ClubID
              FROM users
              WHERE UserID = :id'
         );

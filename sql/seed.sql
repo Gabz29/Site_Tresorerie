@@ -64,21 +64,21 @@ INSERT INTO poles (PoleID, Name, IsActive) VALUES
 --  et Comm, et une écriture « pôle Event + catégorie Événement » n'apportait
 --  aucune information.
 -- ============================================================================
-INSERT INTO categories (CategoryID, Name, `Type`) VALUES
+INSERT INTO categories (CategoryID, Name, `Type`, IsActive) VALUES
   -- Dépenses
-  (1,  'Matériel',                'depense'),  -- disque dur, sono, composants
-  (2,  'Location & prestations',  'depense'),  -- salle, DJ, prestataire
-  (3,  'Nourriture & boissons',   'depense'),  -- buffets, courses
-  (4,  'Transport',               'depense'),  -- déplacements, essence
-  (5,  'Impression & goodies',    'depense'),  -- flyers, affiches, t-shirts
-  (10, 'Licences & assurances',   'depense'),  -- licences sportives, fédérations
-  (11, 'Frais bancaires',         'depense'),  -- tenue de compte, commissions
+  (1,  'Matériel',                'depense', 1),  -- disque dur, sono, composants
+  (2,  'Location & prestations',  'depense', 1),  -- salle, DJ, prestataire
+  (3,  'Nourriture & boissons',   'depense', 1),  -- buffets, courses
+  (4,  'Transport',               'depense', 1),  -- déplacements, essence
+  (5,  'Impression & goodies',    'depense', 1),  -- flyers, affiches, t-shirts
+  (10, 'Licences & assurances',   'depense', 1),  -- licences sportives, fédérations
+  (11, 'Frais bancaires',         'depense', 1),  -- tenue de compte, commissions
   -- Recettes
-  (6,  'Subvention',              'recette'),  -- CVEC, école, collectivités
-  (7,  'Cotisations',             'recette'),  -- adhésions des membres
-  (8,  'Ventes & buvette',        'recette'),  -- soirées, goodies revendus
+  (6,  'Subvention',              'recette', 1),  -- CVEC, école, collectivités
+  (7,  'Cotisations',             'recette', 1),  -- adhésions des membres
+  (8,  'Ventes & buvette',        'recette', 1),  -- soirées, goodies revendus
   -- Les deux
-  (9,  'Divers',                  'both');     -- ce qui n'entre nulle part
+  (9,  'Divers',                  'both', 1);     -- ce qui n'entre nulle part
 
 -- ============================================================================
 --  2. CLUBS

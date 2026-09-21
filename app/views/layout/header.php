@@ -86,7 +86,8 @@ $titre = $titre ?? 'Jumão';
     <?php if (est_admin()) : ?>
       <hr>
       <div class="section-titre">Administration</div>
-      <span class="inactif">Utilisateurs</span>
+      <a href="<?= BASE_URL ?>/index.php?page=utilisateurs">Utilisateurs</a>
+      <a href="<?= BASE_URL ?>/index.php?page=references">Catégories et pôles</a>
     <?php endif; ?>
   </nav>
 

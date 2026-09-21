@@ -18,6 +18,12 @@ CREATE TABLE categories (
   CategoryID   INT           NOT NULL AUTO_INCREMENT,
   Name         VARCHAR(50)   NOT NULL,
   Type         VARCHAR(10)   NOT NULL,          -- 'depense' | 'recette' | 'both'
+  -- Une catégorie ne se supprime pas : des transactions y renvoient, et la
+  -- clé étrangère s'y opposerait de toute façon. On l'ARCHIVE : elle
+  -- disparaît des listes de saisie, mais les écritures passées gardent
+  -- leur libellé. Même principe que pour les clubs, les comptes et les
+  -- pôles.
+  IsActive     TINYINT(1)    NOT NULL DEFAULT 1,
   CONSTRAINT categories_PK PRIMARY KEY (CategoryID),
   CONSTRAINT categories_Name_UQ UNIQUE (Name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -107,6 +113,12 @@ CREATE TABLE users (
   FirstName    VARCHAR(50)   NOT NULL,
   IsAdmin      TINYINT(1)    NOT NULL DEFAULT 0,-- 1=peut gérer les comptes
   IsActive     TINYINT(1)    NOT NULL DEFAULT 1,-- 1=peut se connecter, 0=compte clos
+  -- MustChangePassword : l'administrateur crée le compte avec un mot de
+  -- passe temporaire, qu'il communique de vive voix (jamais par mail : un
+  -- mot de passe envoyé par mail y reste en clair pour toujours). Ce
+  -- drapeau force la personne à en choisir un autre dès sa première
+  -- connexion — après quoi l'administrateur ne le connaît plus.
+  MustChangePassword TINYINT(1) NOT NULL DEFAULT 0,
   Created_At   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   -- ClubID = LE CLUB AUQUEL L'ACCÈS EST LIMITÉ, et rien d'autre.
   -- NULL = aucune limite : c'est le cas de tous les membres du bureau,
