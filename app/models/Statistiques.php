@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/FiltreStats.php';
 
 /**
  * ============================================================================
@@ -18,25 +19,39 @@ require_once __DIR__ . '/../config/database.php';
  *   - ce sont des LECTURES pures, sans écriture ni règle métier ;
  *   - le jour où l'on voudra les optimiser, tout est au même endroit.
  *
- *  ⚠ TOUT EST FILTRÉ PAR EXERCICE, et par club lorsqu'un responsable
- *  consulte. Le paramètre $clubId vaut 0 pour « tous les clubs » — c'est le
- *  contrôleur qui décide, jamais l'utilisateur.
+ *  ⚠ TOUT PASSE PAR UN FiltreStats : club, période, périmètre BDE/clubs.
+ *  C'est le CONTRÔLEUR qui le construit, jamais l'utilisateur — un
+ *  responsable de club reste enfermé dans le sien quoi qu'il tape dans
+ *  l'URL.
+ *
+ *  ⚠ DEUX FAMILLES DE CHIFFRES, QUI NE RÉAGISSENT PAS PAREIL À LA PÉRIODE :
+ *
+ *    - les CLASSEMENTS et les TOTAUX (kpis, par pôle, par catégorie, par
+ *      club) répondent au filtre de période : « combien a-t-on dépensé en
+ *      mars, et en quoi » est une question qui a un sens ;
+ *
+ *    - les SÉRIES CHRONOLOGIQUES (mois par mois, évolution du solde,
+ *      remboursements par état) l'ignorent volontairement et portent
+ *      toujours sur l'exercice entier. Une courbe réduite à un seul point
+ *      ne raconte plus rien — c'est justement la comparaison entre les mois
+ *      qui fait tout l'intérêt de ces graphiques. Elles gardent en revanche
+ *      le périmètre (club, BDE/clubs).
  * ============================================================================
  */
 class Statistiques
 {
     /**
-     * Chiffres clés de l'exercice.
+     * Chiffres clés de la période consultée.
      *
      * Une seule requête plutôt que quatre : chaque total se calcule sur les
      * mêmes lignes, autant ne les parcourir qu'une fois.
      *
      * @return array{recettes:string,depenses:string,en_attente:string,nb:int}
      */
-    public static function kpis(int $fiscalYearId, int $clubId = 0): array
+    public static function kpis(int $fiscalYearId, FiltreStats $filtre): array
     {
-        [$filtreClub, $params] = self::filtreClub($clubId);
-        $params[':exercice']   = $fiscalYearId;
+        [$where, $params]    = $filtre->sql();
+        $params[':exercice'] = $fiscalYearId;
 
         $stmt = db()->prepare("
             SELECT
@@ -48,7 +63,7 @@ class Statistiques
                 COALESCE(SUM(CASE WHEN Status = 'en_attente' THEN Amount END), 0) AS en_attente,
                 COUNT(*) AS nb
             FROM transactions
-            WHERE FiscalYearID = :exercice {$filtreClub}
+            WHERE FiscalYearID = :exercice {$where}
         ");
 
         $stmt->execute($params);
@@ -57,21 +72,23 @@ class Statistiques
     }
 
     /**
-     * Total des versements réellement reçus sur l'exercice.
+     * Total des versements réellement reçus.
+     *
+     * Les versements se rattachent à un club par le BUDGET (b.ClubID) : le
+     * filtre s'applique donc avec le préfixe « b. », et la date à retenir
+     * est celle du versement effectif.
      */
-    public static function versementsRecus(int $fiscalYearId, int $clubId = 0): string
+    public static function versementsRecus(int $fiscalYearId, FiltreStats $filtre): string
     {
+        // Club pris sur le budget (b.), date prise sur le versement (d.).
+        [$where, $params] = $filtre->sql('b.', 'Actual_Date', 'd.');
+
         $sql = "SELECT COALESCE(SUM(d.Actual_Amount), 0)
                 FROM disbursements d
                 INNER JOIN budgets b ON b.BudgetID = d.BudgetID
-                WHERE b.FiscalYearID = :exercice AND d.Status = 'recu'";
+                WHERE b.FiscalYearID = :exercice AND d.Status = 'recu' {$where}";
 
-        $params = [':exercice' => $fiscalYearId];
-
-        if ($clubId > 0) {
-            $sql            .= ' AND b.ClubID = :club';
-            $params[':club'] = $clubId;
-        }
+        $params[':exercice'] = $fiscalYearId;
 
         $stmt = db()->prepare($sql);
         $stmt->execute($params);
@@ -80,7 +97,7 @@ class Statistiques
     }
 
     /**
-     * Recettes et dépenses mois par mois.
+     * Recettes et dépenses mois par mois — série chronologique.
      *
      * ⚠ On ne se contente pas des mois PRÉSENTS dans les données : un mois
      * sans transaction doit apparaître vide, sinon le graphique saute des
@@ -89,17 +106,18 @@ class Statistiques
      *
      * @return array<int,array{mois:string,libelle:string,recettes:float,depenses:float}>
      */
-    public static function parMois(int $fiscalYearId, string $debut, string $fin, int $clubId = 0): array
+    public static function parMois(int $fiscalYearId, string $debut, string $fin, FiltreStats $filtre): array
     {
-        [$filtreClub, $params] = self::filtreClub($clubId);
-        $params[':exercice']   = $fiscalYearId;
+        // surToutLExercice() : on garde le périmètre, on jette la période.
+        [$where, $params]    = $filtre->surToutLExercice()->sql();
+        $params[':exercice'] = $fiscalYearId;
 
         $stmt = db()->prepare("
             SELECT DATE_FORMAT(Date, '%Y-%m') AS mois,
                    COALESCE(SUM(CASE WHEN Type = 'recette' THEN Amount END), 0) AS recettes,
                    COALESCE(SUM(CASE WHEN Type = 'depense' THEN Amount END), 0) AS depenses
             FROM transactions
-            WHERE FiscalYearID = :exercice AND Status = 'valide' {$filtreClub}
+            WHERE FiscalYearID = :exercice AND Status = 'valide' {$where}
             GROUP BY mois
         ");
 
@@ -112,36 +130,239 @@ class Statistiques
             $donnees[$ligne['mois']] = $ligne;
         }
 
-        // Squelette : tous les mois de l'exercice, même vides.
         $resultat = [];
-        $curseur  = new DateTimeImmutable(substr($debut, 0, 7) . '-01');
-        $dernier  = new DateTimeImmutable(substr($fin, 0, 7) . '-01');
 
-        while ($curseur <= $dernier) {
-            $cle = $curseur->format('Y-m');
-
+        foreach (self::moisDeLExercice($debut, $fin) as $cle => $libelle) {
             $resultat[] = [
                 'mois'     => $cle,
-                'libelle'  => self::moisCourt((int) $curseur->format('n')) . ' ' . $curseur->format('y'),
+                'libelle'  => $libelle,
                 'recettes' => (float) ($donnees[$cle]['recettes'] ?? 0),
                 'depenses' => (float) ($donnees[$cle]['depenses'] ?? 0),
             ];
-
-            $curseur = $curseur->modify('+1 month');
         }
 
         return $resultat;
     }
 
     /**
-     * Dépenses par catégorie, de la plus élevée à la plus faible.
+     * Versements reçus mois par mois, pour la courbe du solde.
      *
+     * @return array<string,float> mois AAAA-MM => montant
+     */
+    private static function versementsParMois(int $fiscalYearId, FiltreStats $filtre): array
+    {
+        [$where, $params]    = $filtre->surToutLExercice()->sql('b.');
+        $params[':exercice'] = $fiscalYearId;
+
+        /*
+         * COALESCE(Actual_Date, Planned_Date) : un versement marqué reçu
+         * devrait toujours porter sa date réelle, mais si elle manquait, la
+         * ligne disparaîtrait de la courbe alors que son montant compte
+         * dans le solde — la courbe ne retomberait plus sur le même total
+         * que les indicateurs, et rien ne l'expliquerait.
+         */
+        $stmt = db()->prepare("
+            SELECT DATE_FORMAT(COALESCE(d.Actual_Date, d.Planned_Date), '%Y-%m') AS mois,
+                   SUM(d.Actual_Amount) AS montant
+            FROM disbursements d
+            INNER JOIN budgets b ON b.BudgetID = d.BudgetID
+            WHERE b.FiscalYearID = :exercice AND d.Status = 'recu' {$where}
+            GROUP BY mois
+        ");
+
+        $stmt->execute($params);
+
+        $resultat = [];
+
+        foreach ($stmt->fetchAll() as $ligne) {
+            $resultat[(string) $ligne['mois']] = (float) $ligne['montant'];
+        }
+
+        return $resultat;
+    }
+
+    /**
+     * Versements ENCORE ATTENDUS, mois par mois.
+     *
+     * Sert à prolonger la courbe du solde en pointillés : les tranches non
+     * versées sont connues d'avance (montant et date prévue), c'est
+     * justement ce qui rend une trésorerie d'association prévisible.
+     *
+     * @return array<string,float> mois AAAA-MM => montant
+     */
+    private static function versementsPrevusParMois(int $fiscalYearId, FiltreStats $filtre): array
+    {
+        [$where, $params]    = $filtre->surToutLExercice()->sql('b.');
+        $params[':exercice'] = $fiscalYearId;
+
+        $stmt = db()->prepare("
+            SELECT DATE_FORMAT(d.Planned_Date, '%Y-%m') AS mois,
+                   SUM(d.Planned_Amount) AS montant
+            FROM disbursements d
+            INNER JOIN budgets b ON b.BudgetID = d.BudgetID
+            WHERE b.FiscalYearID = :exercice AND d.Status = 'prevu' {$where}
+            GROUP BY mois
+        ");
+
+        $stmt->execute($params);
+
+        $resultat = [];
+
+        foreach ($stmt->fetchAll() as $ligne) {
+            $resultat[(string) $ligne['mois']] = (float) $ligne['montant'];
+        }
+
+        return $resultat;
+    }
+
+    /**
+     * Évolution du solde, mois par mois — SÉRIE CUMULÉE.
+     *
+     * ⚠ CE GRAPHIQUE IGNORE LE FILTRE DE PÉRIODE, ET C'EST VOULU.
+     *
+     * Chaque point n'est pas « ce qui s'est passé ce mois-ci » mais « ce
+     * qu'il restait sur le compte à la fin de ce mois ». Le limiter à un
+     * mois donnerait un unique point, sans rien à quoi le comparer : le
+     * graphique perdrait exactement ce qu'on lui demande, la tendance.
+     *
+     * Même formule que partout ailleurs :
+     *     solde = versements reçus + recettes − dépenses validées
+     * Le dernier point retombe donc sur le « Solde disponible » affiché en
+     * haut de page. Deux chiffres censés dire la même chose et qui
+     * diffèrent détruiraient la confiance dans tout l'écran.
+     *
+     * LA PROJECTION (clé 'projection', null avant le mois en cours) prolonge
+     * la courbe avec les versements ENCORE ATTENDUS, dont on connaît le
+     * montant et la date. Elle répond à la seule question qui compte
+     * vraiment en trésorerie : « est-ce que je tiens jusqu'en juin ? »
+     *
+     * Elle n'anticipe AUCUNE dépense future — on ne les connaît pas. C'est
+     * donc une borne HAUTE, à lire comme « au mieux, voilà ce que j'aurai »,
+     * et surtout pas comme une prévision de solde.
+     *
+     * @return array<int,array{mois:string,libelle:string,solde:float,projection:float|null}>
+     */
+    public static function evolutionSolde(int $fiscalYearId, string $debut, string $fin, FiltreStats $filtre): array
+    {
+        $mouvements = self::parMois($fiscalYearId, $debut, $fin, $filtre);
+        $versements = self::versementsParMois($fiscalYearId, $filtre);
+        $attendus   = self::versementsPrevusParMois($fiscalYearId, $filtre);
+
+        $moisCourant = (new DateTimeImmutable())->format('Y-m');
+
+        $resultat = [];
+        $cumul    = 0.0;
+        $projete  = null;
+
+        foreach ($mouvements as $m) {
+            // Le cumul n'est jamais remis à zéro : c'est ce report d'un mois
+            // sur l'autre qui fait la différence entre une courbe de solde
+            // et un simple graphique de mouvements.
+            $cumul += ($versements[$m['mois']] ?? 0.0) + $m['recettes'] - $m['depenses'];
+
+            /*
+             * La projection démarre au mois en cours, ACCROCHÉE au solde
+             * réel de ce mois-là. Sans ce point d'ancrage commun, les deux
+             * tracés partiraient de hauteurs différentes et on lirait un
+             * décrochage qui n'existe pas.
+             */
+            if ($m['mois'] === $moisCourant) {
+                $projete = $cumul;
+            } elseif ($projete !== null) {
+                $projete += $attendus[$m['mois']] ?? 0.0;
+            }
+
+            $resultat[] = [
+                'mois'       => $m['mois'],
+                'libelle'    => $m['libelle'],
+                'solde'      => $cumul,
+                'projection' => $projete,
+            ];
+        }
+
+        return $resultat;
+    }
+
+    /**
+     * Demandes de remboursement mois par mois, ventilées par état.
+     *
+     * Trois séries superposées sur le mois de l'ACHAT avancé : en attente,
+     * acceptées (validées mais pas encore payées) et remboursées. On lit
+     * d'un coup d'œil si le bureau suit le rythme des demandes ou s'il
+     * accumule du retard.
+     *
+     * Les demandes REFUSÉES sont écartées : elles ne représentent aucune
+     * somme due, et les mêler aux autres gonflerait les barres d'un argent
+     * que personne n'attend.
+     *
+     * Série chronologique : période ignorée, périmètre conservé.
+     *
+     * @return array<int,array{mois:string,libelle:string,en_attente:float,valide:float,rembourse:float}>
+     */
+    public static function remboursementsParEtat(int $fiscalYearId, string $debut, string $fin, FiltreStats $filtre): array
+    {
+        [$where, $params]    = $filtre->surToutLExercice()->sql('', 'Purchase_Date');
+        $params[':exercice'] = $fiscalYearId;
+
+        $stmt = db()->prepare("
+            SELECT DATE_FORMAT(Purchase_Date, '%Y-%m') AS mois,
+                   COALESCE(SUM(CASE WHEN Status = 'en_attente' THEN Amount END), 0) AS en_attente,
+                   COALESCE(SUM(CASE WHEN Status = 'valide'     THEN Amount END), 0) AS valide,
+                   COALESCE(SUM(CASE WHEN Status = 'rembourse'  THEN Amount END), 0) AS rembourse
+            FROM reimbursements
+            WHERE FiscalYearID = :exercice {$where}
+            GROUP BY mois
+        ");
+
+        $stmt->execute($params);
+
+        $donnees = [];
+
+        foreach ($stmt->fetchAll() as $ligne) {
+            $donnees[$ligne['mois']] = $ligne;
+        }
+
+        $resultat = [];
+
+        foreach (self::moisDeLExercice($debut, $fin) as $cle => $libelle) {
+            $resultat[] = [
+                'mois'       => $cle,
+                'libelle'    => $libelle,
+                'en_attente' => (float) ($donnees[$cle]['en_attente'] ?? 0),
+                'valide'     => (float) ($donnees[$cle]['valide'] ?? 0),
+                'rembourse'  => (float) ($donnees[$cle]['rembourse'] ?? 0),
+            ];
+        }
+
+        return $resultat;
+    }
+
+    /**
+     * Montants par catégorie, du plus élevé au plus faible.
+     *
+     * ⚠ LE TYPE EST UN PARAMÈTRE, il n'est plus écrit en dur.
+     *
+     * Ces trois classements ne connaissaient que les dépenses : on voyait
+     * parfaitement où partait l'argent, et nulle part d'où il venait. Pour
+     * un BDE dont les soirées rapportent réellement, savoir si la buvette
+     * a couvert ses frais est une question de trésorerie au moins aussi
+     * utile que le classement des dépenses.
+     *
+     * Un paramètre plutôt que trois méthodes jumelles : la requête est
+     * identique au type près, et deux copies finissent toujours par
+     * diverger le jour où l'on corrige l'une en oubliant l'autre.
+     *
+     * @param string $type 'depense' ou 'recette'
      * @return array<int,array{libelle:string,montant:float}>
      */
-    public static function depensesParCategorie(int $fiscalYearId, int $clubId = 0): array
-    {
-        [$filtreClub, $params] = self::filtreClub($clubId, 't.');
-        $params[':exercice']   = $fiscalYearId;
+    public static function montantsParCategorie(
+        int $fiscalYearId,
+        FiltreStats $filtre,
+        string $type = 'depense'
+    ): array {
+        [$where, $params]    = $filtre->sql('t.');
+        $params[':exercice'] = $fiscalYearId;
+        $params[':type']     = self::typeValide($type);
 
         $stmt = db()->prepare("
             SELECT COALESCE(c.Name, 'Sans catégorie') AS libelle,
@@ -149,20 +370,14 @@ class Statistiques
             FROM transactions t
             LEFT JOIN categories c ON c.CategoryID = t.CategoryID
             WHERE t.FiscalYearID = :exercice
-              AND t.Type = 'depense' AND t.Status = 'valide' {$filtreClub}
+              AND t.Type = :type AND t.Status = 'valide' {$where}
             GROUP BY libelle
             ORDER BY montant DESC
         ");
 
         $stmt->execute($params);
 
-        return array_map(
-            static fn (array $l): array => [
-                'libelle' => (string) $l['libelle'],
-                'montant' => (float) $l['montant'],
-            ],
-            $stmt->fetchAll()
-        );
+        return self::enSerie($stmt->fetchAll());
     }
 
     /**
@@ -173,60 +388,31 @@ class Statistiques
      * matériel et nourriture confondus ; la répartition par nature se lit
      * sur l'autre graphique.
      *
+     * @param string $type 'depense' ou 'recette'
      * @return array<int,array{libelle:string,montant:float}>
      */
-    public static function depensesParPole(int $fiscalYearId, int $clubId = 0): array
-    {
-        [$filtreClub, $params] = self::filtreClub($clubId, 't.');
-        $params[':exercice']   = $fiscalYearId;
+    public static function montantsParPole(
+        int $fiscalYearId,
+        FiltreStats $filtre,
+        string $type = 'depense'
+    ): array {
+        [$where, $params]    = $filtre->sql('t.');
+        $params[':exercice'] = $fiscalYearId;
+        $params[':type']     = self::typeValide($type);
 
         $stmt = db()->prepare("
             SELECT p.Name AS libelle, SUM(t.Amount) AS montant
             FROM transactions t
             INNER JOIN poles p ON p.PoleID = t.PoleID
             WHERE t.FiscalYearID = :exercice
-              AND t.Type = 'depense' AND t.Status = 'valide' {$filtreClub}
+              AND t.Type = :type AND t.Status = 'valide' {$where}
             GROUP BY p.PoleID, p.Name
             ORDER BY montant DESC
         ");
 
         $stmt->execute($params);
 
-        return array_map(
-            static fn (array $l): array => [
-                'libelle' => (string) $l['libelle'],
-                'montant' => (float) $l['montant'],
-            ],
-            $stmt->fetchAll()
-        );
-    }
-
-    /**
-     * Dépenses par club — n'a de sens que pour le bureau.
-     *
-     * @return array<int,array{libelle:string,montant:float}>
-     */
-    public static function depensesParClub(int $fiscalYearId): array
-    {
-        $stmt = db()->prepare("
-            SELECT cl.Name AS libelle, SUM(t.Amount) AS montant
-            FROM transactions t
-            INNER JOIN clubs cl ON cl.ClubID = t.ClubID
-            WHERE t.FiscalYearID = :exercice
-              AND t.Type = 'depense' AND t.Status = 'valide'
-            GROUP BY cl.ClubID, cl.Name
-            ORDER BY montant DESC
-        ");
-
-        $stmt->execute([':exercice' => $fiscalYearId]);
-
-        return array_map(
-            static fn (array $l): array => [
-                'libelle' => (string) $l['libelle'],
-                'montant' => (float) $l['montant'],
-            ],
-            $stmt->fetchAll()
-        );
+        return self::enSerie($stmt->fetchAll());
     }
 
     /**
@@ -234,17 +420,17 @@ class Statistiques
      *
      * @return array<int,array<string,mixed>>
      */
-    public static function dernieresTransactions(int $fiscalYearId, int $clubId = 0, int $limite = 8): array
+    public static function dernieresTransactions(int $fiscalYearId, FiltreStats $filtre, int $limite = 8): array
     {
-        [$filtreClub, $params] = self::filtreClub($clubId, 't.');
-        $params[':exercice']   = $fiscalYearId;
+        [$where, $params]    = $filtre->sql('t.');
+        $params[':exercice'] = $fiscalYearId;
 
         $stmt = db()->prepare("
             SELECT t.TransactionID, t.Date, t.Type, t.Amount, t.Description,
                    t.Status, cl.Name AS ClubName
             FROM transactions t
             INNER JOIN clubs cl ON cl.ClubID = t.ClubID
-            WHERE t.FiscalYearID = :exercice {$filtreClub}
+            WHERE t.FiscalYearID = :exercice {$where}
             ORDER BY t.Date DESC, t.TransactionID DESC
             LIMIT :limite
         ");
@@ -260,17 +446,60 @@ class Statistiques
     }
 
     /**
-     * Construit le fragment de filtre sur le club.
+     * Les mois de l'exercice, du premier au dernier, même sans données.
      *
-     * @return array{0:string,1:array<string,mixed>}
+     * Extrait de parMois() pour servir aussi aux remboursements : les deux
+     * graphiques doivent présenter EXACTEMENT les mêmes colonnes, sans quoi
+     * on les comparerait de travers.
+     *
+     * @return array<string,string> AAAA-MM => libellé court
      */
-    private static function filtreClub(int $clubId, string $prefixe = ''): array
+    private static function moisDeLExercice(string $debut, string $fin): array
     {
-        if ($clubId <= 0) {
-            return ['', []];
+        $mois    = [];
+        $curseur = new DateTimeImmutable(substr($debut, 0, 7) . '-01');
+        $dernier = new DateTimeImmutable(substr($fin, 0, 7) . '-01');
+
+        while ($curseur <= $dernier) {
+            $mois[$curseur->format('Y-m')] =
+                self::moisCourt((int) $curseur->format('n')) . ' ' . $curseur->format('y');
+
+            $curseur = $curseur->modify('+1 month');
         }
 
-        return [" AND {$prefixe}ClubID = :club", [':club' => $clubId]];
+        return $mois;
+    }
+
+    /**
+     * Ramène un type d'écriture à l'une des deux valeurs connues.
+     *
+     * Le type part en paramètre lié, il n'y a donc pas d'injection
+     * possible. Mais une faute de frappe dans un appel ('depenses' au
+     * pluriel) ne provoquerait aucune erreur : la requête renverrait
+     * simplement zéro ligne, et le graphique afficherait « aucune
+     * dépense ». Une panne silencieuse est plus coûteuse qu'un garde-fou
+     * de trois lignes.
+     */
+    private static function typeValide(string $type): string
+    {
+        return $type === 'recette' ? 'recette' : 'depense';
+    }
+
+    /**
+     * Normalise un résultat « libellé + montant » pour les graphiques.
+     *
+     * @param array<int,array<string,mixed>> $lignes
+     * @return array<int,array{libelle:string,montant:float}>
+     */
+    private static function enSerie(array $lignes): array
+    {
+        return array_map(
+            static fn (array $l): array => [
+                'libelle' => (string) $l['libelle'],
+                'montant' => (float) $l['montant'],
+            ],
+            $lignes
+        );
     }
 
     /**

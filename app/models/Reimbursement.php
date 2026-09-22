@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/FiltreStats.php';
 
 /**
  * ============================================================================
@@ -92,15 +93,23 @@ class Reimbursement
     /**
      * Nombre de demandes en attente — pour la pastille du menu.
      */
-    public static function compterEnAttente(int $fiscalYearId, int $clubId = 0): int
+    public static function compterEnAttente(int $fiscalYearId, FiltreStats $filtre): int
     {
-        $sql    = "SELECT COUNT(*) FROM reimbursements WHERE FiscalYearID = :exercice AND Status = 'en_attente'";
-        $params = [':exercice' => $fiscalYearId];
+        /*
+         * ⚠ LA PÉRIODE EST VOLONTAIREMENT IGNORÉE (surToutLExercice).
+         *
+         * Ce compteur annonce ce qui RÉCLAME UNE ACTION. Une demande en
+         * attente le reste, qu'on regarde mars ou l'année entière : la
+         * masquer parce que l'achat date d'un autre mois reviendrait à
+         * cacher du travail à faire. Le périmètre (club, BDE/clubs) est en
+         * revanche respecté — là, l'utilisateur a dit ce qu'il voulait voir.
+         */
+        [$where, $params] = $filtre->surToutLExercice()->sql();
 
-        if ($clubId > 0) {
-            $sql            .= ' AND ClubID = :club';
-            $params[':club'] = $clubId;
-        }
+        $sql = "SELECT COUNT(*) FROM reimbursements
+                WHERE FiscalYearID = :exercice AND Status = 'en_attente' {$where}";
+
+        $params[':exercice'] = $fiscalYearId;
 
         $stmt = db()->prepare($sql);
         $stmt->execute($params);

@@ -58,6 +58,12 @@ CREATE TABLE clubs (
   ClubID       INT           NOT NULL AUTO_INCREMENT,
   Name         VARCHAR(50)   NOT NULL,
   Description  TEXT          NULL,              -- optionnel
+  -- IsBDE : le BDE est enregistré comme un club, mais ce n'en est pas un.
+  -- Son budget vient directement de l'ISEN et lui est propre, tandis que
+  -- les budgets des clubs sont une RÉPARTITION d'une autre enveloppe.
+  -- Les mélanger dans un même total reviendrait à additionner deux sommes
+  -- de nature différente. Un seul club doit porter ce drapeau.
+  IsBDE        TINYINT(1)    NOT NULL DEFAULT 0,
   IsActive     TINYINT(1)    NOT NULL DEFAULT 1,-- 1=actif, 0=archivé/dissous
   CONSTRAINT clubs_PK PRIMARY KEY (ClubID),
   CONSTRAINT clubs_Name_UQ UNIQUE (Name)
@@ -66,11 +72,26 @@ CREATE TABLE clubs (
 -- ============================================================================
 --  3. FISCALYEAR  (exercices budgétaires : septembre N -> août N+1)
 -- ============================================================================
+--     DEUX ENVELOPPES DISTINCTES VIENNENT DE L'ISEN CHAQUE ANNÉE :
+--
+--       1. l'enveloppe du BDE (ex. 30 000 €), versée en 4 tranches imposées
+--          par la comptabilité de l'école. Le BDE l'encaisse et la dépense :
+--          elle est modélisée comme le BUDGET du club « BDE ».
+--
+--       2. l'enveloppe RÉSERVÉE AUX CLUBS (ex. 12 000 €), versée au BDE qui
+--          la répartit librement entre eux, en accord avec eux. C'est
+--          Enveloppe_Clubs ci-dessous.
+--
+--     Sans ce second montant, on verrait bien ce qui a été alloué à chaque
+--     club, mais jamais sur QUELLE SOMME TOTALE — donc impossible de savoir
+--     s'il reste quelque chose à répartir.
 CREATE TABLE fiscalyear (
   FiscalYearID INT           NOT NULL AUTO_INCREMENT,
   Year         VARCHAR(10)   NOT NULL,          -- ex: '2024-2025'
   Start_Date   DATE          NOT NULL,          -- sert à rattacher une transaction
   End_Date     DATE          NOT NULL,          --   à l'exercice via sa date
+  -- Somme reçue de l'ISEN pour les clubs, à répartir entre eux.
+  Enveloppe_Clubs DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   IsActive     TINYINT(1)    NOT NULL DEFAULT 0,-- un seul exercice actif à la fois
   CONSTRAINT fiscalyear_PK PRIMARY KEY (FiscalYearID),
   CONSTRAINT fiscalyear_Year_UQ UNIQUE (Year)

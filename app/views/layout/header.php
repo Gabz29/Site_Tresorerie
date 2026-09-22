@@ -55,16 +55,27 @@ $titre = $titre ?? 'Jumão';
      * club, le bureau toutes.
      */
     $layoutExerciceId = exercice_consulte_id();
+    // Pas de périmètre BDE/clubs ici : la pastille du menu suit
+    // l'utilisateur de page en page, elle doit annoncer TOUT ce qui reste
+    // à traiter, sans dépendre d'un filtre posé sur le tableau de bord.
     $layoutEnAttente  = $layoutExerciceId === null ? 0 : Reimbursement::compterEnAttente(
         $layoutExerciceId,
-        est_bureau() ? 0 : (int) ($_SESSION['club_id'] ?? 0)
+        new FiltreStats(est_bureau() ? 0 : (int) ($_SESSION['club_id'] ?? 0))
     );
     ?>
-    <a href="<?= BASE_URL ?>/index.php?page=remboursements">
-      Remboursements<?php if ($layoutEnAttente > 0) : ?>
-        <span class="pastille"><?= $layoutEnAttente ?></span>
-      <?php endif; ?>
-    </a>
+    <?php
+    /*
+     * Pas de retour à la ligne entre le mot et la pastille : en HTML, un
+     * saut de ligne dans le texte devient une ESPACE. Ajoutée à la marge
+     * de la pastille, elle laissait un trou visible entre les deux. Ici
+     * l'espacement est décidé une seule fois, en CSS.
+     */
+    ?>
+    <a href="<?= BASE_URL ?>/index.php?page=remboursements">Remboursements<?php
+      if ($layoutEnAttente > 0) :
+        ?><span class="pastille" aria-label="<?= (int) $layoutEnAttente ?> en attente"><?= (int) $layoutEnAttente ?></span><?php
+      endif;
+    ?></a>
 
     <?php
     /*

@@ -32,19 +32,48 @@ class BudgetController
         if ($exercice === null) {
             // Aucun exercice en base : rien à afficher, et surtout rien à
             // calculer. On le dit plutôt que de montrer un tableau vide.
-            $titre    = 'Budgets';
-            $budgets  = [];
-            $totaux   = null;
-            $flash    = lire_flash();
+            $titre       = 'Budgets';
+            $budgets     = [];
+            $budgetBde   = null;
+            $repartition = null;
+            $totaux      = null;
+            $flash       = lire_flash();
 
             require __DIR__ . '/../views/budgets/index.php';
             return;
         }
 
         $titre   = 'Budgets';
-        $budgets = Budget::avecSoldes((int) $exercice['FiscalYearID']);
-        $totaux  = $this->totaliser($budgets);
-        $flash   = lire_flash();
+        $exerciceId = (int) $exercice['FiscalYearID'];
+
+        /*
+         * Deux groupes séparés, jamais additionnés : l'enveloppe du BDE et
+         * celle destinée aux clubs viennent toutes deux de l'ISEN mais n'ont
+         * pas la même nature (cf. Budget::separerBdeEtClubs).
+         */
+        $groupes    = Budget::separerBdeEtClubs($exerciceId);
+        $budgetBde  = $groupes['bde'];
+        $budgets    = $groupes['clubs'];
+        $totaux     = $this->totaliser($budgets);
+
+        /*
+         * Suivi de la répartition : combien de l'enveloppe reçue pour les
+         * clubs a déjà été attribué, et combien reste à distribuer. C'est la
+         * question que se pose le trésorier en début d'année.
+         */
+        $enveloppeClubs = (float) $exercice['Enveloppe_Clubs'];
+        $repartition = [
+            'enveloppe' => $enveloppeClubs,
+            'reparti'   => $totaux['alloue'],
+            'reste'     => $enveloppeClubs - $totaux['alloue'],
+            // Peut dépasser 100 % : on a le droit de répartir plus que reçu,
+            // mais il faut le voir tout de suite.
+            'taux'      => $enveloppeClubs > 0
+                              ? round(($totaux['alloue'] / $enveloppeClubs) * 100)
+                              : null,
+        ];
+
+        $flash = lire_flash();
 
         require __DIR__ . '/../views/budgets/index.php';
     }

@@ -340,15 +340,16 @@ switch ($page) {
         // Changer l'exercice qu'on REGARDE. Accessible à tous — cela ne
         // modifie aucune donnée, seulement l'affichage de sa propre session.
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            rediriger('?page=clubs');
+            rediriger('?page=dashboard');
         }
         verifier_csrf();
         definir_exercice_consulte((int) ($_POST['exercice'] ?? 0));
 
         // Retour sur la page d'où venait la demande, pour ne pas renvoyer
         // l'utilisateur à l'accueil à chaque changement d'exercice.
-        $retour = $_POST['retour'] ?? '?page=clubs';
-        rediriger(is_string($retour) && str_starts_with($retour, '?page=') ? $retour : '?page=clubs');
+        // L'accueil, c'est le tableau de bord — comme après la connexion.
+        $retour = $_POST['retour'] ?? '?page=dashboard';
+        rediriger(is_string($retour) && str_starts_with($retour, '?page=') ? $retour : '?page=dashboard');
         break;
 
     case 'exercices':
@@ -370,6 +371,14 @@ switch ($page) {
             rediriger('?page=exercices');
         }
         (new FiscalYearController())->activate();
+        break;
+
+    case 'exercice-enveloppe':
+        require_once __DIR__ . '/../app/controllers/FiscalYearController.php';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            rediriger('?page=exercices');
+        }
+        (new FiscalYearController())->majEnveloppe();
         break;
 
     case 'utilisateurs':

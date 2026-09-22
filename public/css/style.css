@@ -1,10 +1,102 @@
 /* ==========================================================================
    JUMÃO — feuille de style
 
-   ÉTAT : version minimale de la Phase 2, juste assez pour que les pages
-   soient lisibles. La reprise des maquettes (Maquettes/Style_Site_BDE.css :
-   couleurs, composants, responsive) est le travail de la Phase 3 (3.2).
+   PARTI PRIS : sobre, aéré, très peu de couleur.
+
+   Une application de trésorerie se lit ; elle ne se contemple pas. Toute
+   couleur employée pour décorer est une couleur qu'on ne pourra plus
+   employer pour alerter. L'interface est donc en niveaux de gris, et le
+   ROUGE est réservé à ce qui compte : l'action principale, l'élément
+   actif, les dépenses, le danger.
+
+   UN SEUL ROUGE, DÉCLINÉ. Les nuances ci-dessous sont toutes issues de la
+   même teinte. On obtient des états distincts (fond, bordure, texte,
+   survol) sans jamais introduire une deuxième couleur qui entrerait en
+   concurrence avec la première.
+
+   DEUX EXCEPTIONS ASSUMÉES, toutes deux porteuses de sens :
+    - le VERT des recettes. Rouge = sort, vert = entre : c'est une
+      convention comptable universelle, et l'abandonner obligerait à lire
+      un libellé pour savoir dans quel sens va l'argent.
+    - le GRIS des repères d'arrière-plan (an dernier, montants réglés) :
+      un gris n'attire pas l'œil, et c'est exactement ce qu'on lui demande.
+
+   LES COULEURS SONT DÉCLARÉES ICI, ET NULLE PART AILLEURS. Les
+   graphiques SVG portent des classes (.g-depense, .g-recette…) plutôt que
+   des attributs fill="#..." : changer la charte se fait dans ce fichier,
+   pas dans six fonctions PHP dont on oublierait la moitié.
    ========================================================================== */
+
+:root {
+  /* --- Encre : l'essentiel de l'interface ------------------------------ */
+  --encre:         #16181d;   /* titres, montants */
+  --encre-douce:   #3d424b;   /* texte courant */
+  --encre-faible:  #767d88;   /* légendes, unités, texte secondaire */
+  --trait:         #e7e9ed;   /* filets, séparateurs */
+  --trait-fort:    #d0d4da;   /* bordures de champs */
+  --fond:          #ffffff;
+  --fond-doux:     #f7f8fa;   /* barres d'outils, en-têtes de tableau */
+
+  /* --- Le rouge, et lui seul ------------------------------------------ */
+  --rouge:         #c1121f;   /* accent principal */
+  --rouge-vif:     #d92b3a;   /* survol, alerte vive */
+  --rouge-sombre:  #8d0d17;   /* texte sur fond clair */
+  --rouge-clair:   #f0a6ac;   /* second niveau d'un même graphique */
+  --rouge-pale:    #f9dcdf;   /* bordure de zone d'alerte */
+  --rouge-voile:   #fdf2f3;   /* fond de zone d'alerte */
+
+  /* --- Le vert des recettes, unique lui aussi -------------------------- */
+  --vert:          #0f7b5f;
+  --vert-voile:    #eef7f3;
+
+  /* --- Rythme ---------------------------------------------------------- */
+  --rayon:         10px;
+  --rayon-petit:   6px;
+
+  /*
+   * ÉLÉVATION — deux ombres, pas douze.
+   *
+   * Une ombre sert à dire « cet élément flotte au-dessus du reste ».
+   * Deux niveaux suffisent : ce qui se pose (une carte) et ce qui
+   * survole (un menu ouvert). Au-delà, personne ne sait plus lequel
+   * choisir et l'interface perd sa hiérarchie.
+   */
+  --ombre-posee:   0 1px 2px rgba(22, 24, 29, .05);
+  --ombre-flottee: 0 8px 24px -6px rgba(22, 24, 29, .18);
+
+  /* Une seule durée de transition : la cohérence du mouvement compte
+     davantage que le réglage fin de chaque animation. */
+  --duree: .14s;
+
+  /*
+   * color-scheme indique au navigateur que la page est claire. Il en
+   * déduit l'aspect des éléments qu'il dessine LUI-MÊME et que le CSS
+   * n'atteint pas : ascenseurs, calendrier d'un champ date, listes
+   * déroulantes natives. Sans cette ligne, un utilisateur en thème
+   * sombre obtient un calendrier noir dans un formulaire blanc.
+   */
+  color-scheme: light;
+}
+
+/*
+ * Le mouvement est une préférence système, pas une décision de designer.
+ *
+ * Certaines personnes déclenchent nausées ou migraines avec les
+ * animations, et le système d'exploitation permet de le signaler. On
+ * respecte ce réglage plutôt que d'imposer nos transitions.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duree: 0s;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
 
 * {
   margin: 0;
@@ -13,213 +105,448 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
   display: flex;
   min-height: 100vh;
-  color: #222;
-  background: #fff;
+  color: var(--encre-douce);
+  background: var(--fond);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * text-wrap: pretty évite les « veuves » — ce mot seul rejeté sur la
+ * dernière ligne d'un paragraphe. Le navigateur ajuste les coupures des
+ * dernières lignes ; là où la propriété n'existe pas, rien ne casse.
+ */
+p {
+  text-wrap: pretty;
+}
+
+/*
+ * balance répartit un titre court sur des lignes de longueur égale, au
+ * lieu de laisser un mot orphelin en dessous. Réservé aux titres : le
+ * navigateur ne l'applique qu'à quelques lignes, par coût de calcul.
+ */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* La sélection reprend l'accent : un détail, mais c'est ce genre de
+   détail qui fait qu'une interface paraît finie. */
+::selection {
+  background: var(--rouge-pale);
+  color: var(--rouge-sombre);
+}
+
+a {
+  color: var(--rouge);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--rouge-sombre);
+  text-decoration: underline;
+}
+
+/*
+ * Un anneau de focus VISIBLE et identique partout.
+ *
+ * Les navigateurs en fournissent un par défaut, que les feuilles de style
+ * suppriment souvent parce qu'il est jugé disgracieux. Le supprimer rend
+ * la navigation au clavier impossible : on ne sait plus où l'on est. On
+ * le remplace donc au lieu de l'effacer.
+ */
+:focus-visible {
+  outline: 2px solid var(--rouge);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* --------------------------------------------------------- Navigation --- */
 
 .sidebar {
-  width: 210px;
+  /* 200 px : « Catégories et pôles » et « Remboursements ● » y tiennent
+     sans passer à la ligne — ce que le white-space: nowrap des entrées
+     de menu interdit de toute façon. Réduire davantage les ferait
+     déborder au lieu de les replier. */
+  width: 200px;
   flex-shrink: 0;
-  border-right: 1px solid #ccc;
-  padding: 1rem;
-  font-size: .85rem;
+  padding: 1.5rem 1.25rem;
+  border-right: 1px solid var(--trait);
+  font-size: .875rem;
+  background: var(--fond-doux);
+
+  display: flex;
+  flex-direction: column;
+
+  /*
+   * MENU FIGÉ : il reste à l'écran pendant que le contenu défile.
+   *
+   * position: sticky plutôt que fixed. « fixed » sort l'élément du flux :
+   * il ne réserverait plus sa place, et le contenu passerait dessous — il
+   * faudrait alors compenser à la main par un margin-left, à retenir à
+   * chaque changement de largeur. « sticky » garde l'élément dans le
+   * flux : sa colonne reste réservée, il se contente de ne pas défiler.
+   *
+   * LES TROIS PROPRIÉTÉS SONT INDISPENSABLES ENSEMBLE :
+   *   - top: 0            sans point d'accroche, sticky ne fait rien ;
+   *   - align-self        dans un conteneur flex, un élément est étiré à
+   *     la hauteur de la ligne par défaut. Il serait donc aussi haut que
+   *     la page entière, et n'aurait aucune marge pour « coller » ;
+   *   - height: 100vh     lui donne exactement la hauteur de la fenêtre.
+   * Il manque l'une des trois et le menu redéfile comme avant.
+   */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+
+  /* Un menu plus haut que la fenêtre défile DANS la barre, sans entraîner
+     la page : autrement, le bloc utilisateur du bas deviendrait
+     inaccessible sur un écran peu haut. */
+  overflow-y: auto;
 }
 
 .sidebar h2 {
-  font-size: .95rem;
-  margin-bottom: 1rem;
-}
-
-.sidebar nav a,
-.sidebar nav span {
-  display: block;
-  padding: .3rem 0;
-}
-
-.sidebar nav a {
-  color: #1a4f8a;
-  text-decoration: none;
-}
-
-.sidebar nav a:hover {
-  text-decoration: underline;
-}
-
-.sidebar nav a.actif {
-  font-weight: 700;
-}
-
-/* Entrées de menu dont la page n'existe pas encore : visibles pour montrer
-   la structure à venir, mais clairement inactives. */
-.sidebar nav .inactif {
-  color: #999;
-}
-
-.sidebar hr {
-  margin: .6rem 0;
-  border: none;
-  border-top: 1px solid #ccc;
-}
-
-.sidebar .section-titre {
-  font-size: .7rem;
-  text-transform: uppercase;
-  color: #999;
-  margin-top: .25rem;
-}
-
-/* La barre latérale devient une colonne : le bloc utilisateur est poussé
-   en bas, quelle que soit la longueur du menu. */
-.sidebar {
-  display: flex;
-  flex-direction: column;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--encre);
+  margin-bottom: 1.5rem;
 }
 
 .sidebar nav {
   flex: 1;
 }
 
-.utilisateur {
-  border-top: 1px solid #ccc;
-  padding-top: .6rem;
-  margin-top: 1rem;
-  font-size: .8rem;
+/*
+ * ⚠ LE « > » N'EST PAS UNE COQUETTERIE, IL CORRIGE UN BUG.
+ *
+ * Écrit « .sidebar nav span », ce sélecteur visait les entrées inactives
+ * du menu — mais il attrapait AUSSI la pastille de comptage, qui est un
+ * <span> à l'intérieur du lien « Remboursements ». Et comme
+ * « .sidebar nav span » (une classe + deux éléments) est plus spécifique
+ * que « .pastille » (une classe), c'est lui qui gagnait : la pastille
+ * héritait de display:block et s'étalait en longue barre sur toute la
+ * largeur du menu, avec le chiffre perdu au milieu.
+ *
+ * « > » limite la règle aux enfants DIRECTS de <nav>. La pastille, nichée
+ * dans un <a>, n'en fait pas partie et garde son propre style.
+ *
+ * La leçon vaut au-delà de ce cas : un sélecteur descendant ratisse tout
+ * ce qui se trouve dessous, y compris ce qui n'existait pas encore quand
+ * on l'a écrit.
+ */
+.sidebar nav > a,
+.sidebar nav > span {
+  display: block;
+  padding: .4rem .6rem;
+  border-radius: var(--rayon-petit);
+  color: var(--encre-douce);
+
+  /* Un libellé et sa pastille ne se séparent jamais sur deux lignes. */
+  white-space: nowrap;
 }
 
-.utilisateur-nom {
+.sidebar nav a:hover {
+  background: var(--fond);
+  color: var(--encre);
+  text-decoration: none;
+}
+
+/*
+ * La page courante : fond rouge très pâle et filet rouge à gauche.
+ *
+ * Le filet fait le gros du travail. Un simple fond coloré se confondrait
+ * avec un survol ; une barre verticale ne peut signifier qu'une chose,
+ * « vous êtes ici ».
+ */
+.sidebar nav a.actif {
+  background: var(--rouge-voile);
+  color: var(--rouge-sombre);
   font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--rouge);
 }
 
-.utilisateur-role {
-  color: #666;
-  font-size: .75rem;
-  margin-bottom: .5rem;
+/* Entrées dont la page n'existe pas encore : visibles pour montrer la
+   structure à venir, mais clairement inactives. */
+.sidebar nav .inactif {
+  color: #aeb4bd;
+}
+
+.sidebar hr {
+  margin: .75rem 0;
+  border: none;
+  border-top: 1px solid var(--trait);
+}
+
+.sidebar .section-titre {
+  font-size: .6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--encre-faible);
+  padding: .4rem .6rem .15rem;
+}
+
+/*
+ * Pastille de comptage : un petit ROND, pas une étiquette.
+ *
+ * inline-flex + place-items centre le chiffre à la fois horizontalement
+ * et verticalement, ce qu'un line-height calculé à la main ne fait
+ * qu'approximativement — et qui se décale dès qu'on change la taille.
+ *
+ * min-width et height égaux donnent un cercle parfait à un chiffre ;
+ * au-delà, le padding l'étire en pilule plutôt que de tronquer. Un
+ * compteur qui affiche « 1 » au lieu de « 12 » est pire que pas de
+ * compteur du tout.
+ */
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 .22rem;
+  margin-left: .4rem;
+  border-radius: 999px;
+  background: var(--rouge);
+  color: #fff;
+  /* Assez petit pour rester discret, assez grand pour être lu : en
+     dessous de 10 px le chiffre devient une tache. */
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: .05em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* -------------------------------------------- Sélecteur d'exercice --- */
 
 .exercice-choix {
-  margin: .8rem 0;
-  padding: .6rem 0;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  margin: 1rem 0;
+  padding: .85rem 0;
+  border-top: 1px solid var(--trait);
+  border-bottom: 1px solid var(--trait);
 }
 
 .exercice-choix label {
   display: block;
-  font-size: .7rem;
+  font-size: .6875rem;
+  font-weight: 600;
   text-transform: uppercase;
-  color: #999;
-  margin-bottom: .25rem;
+  letter-spacing: .06em;
+  color: var(--encre-faible);
+  margin-bottom: .35rem;
+}
+
+/* ------------------------------------------------- Champs de saisie --- */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+  font-family: inherit;
+  font-size: .875rem;
+  color: var(--encre);
+  background: var(--fond);
+  border: 1px solid var(--trait-fort);
+  border-radius: var(--rayon-petit);
+  padding: .45rem .6rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--rouge);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--rouge-voile);
 }
 
 .exercice-choix select {
   width: 100%;
-  padding: .3rem;
-  border: 1px solid #ccc;
-  font-size: .8rem;
-  font-family: inherit;
 }
 
-.note-alerte {
-  color: #8a5a1a;
-  margin-top: .4rem;
+/* Cases et boutons radio à la couleur de l'accent, sans rien reconstruire :
+   accent-color suffit, là où l'on masquait autrefois la case pour en
+   redessiner une fausse — qui perdait le clavier au passage. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--rouge);
+}
+
+/* ------------------------------------------------------- Utilisateur --- */
+
+.utilisateur {
+  border-top: 1px solid var(--trait);
+  padding-top: .85rem;
+  margin-top: 1rem;
+  font-size: .8125rem;
+}
+
+.utilisateur-nom {
+  font-weight: 600;
+  color: var(--encre);
+}
+
+.utilisateur-role {
+  color: var(--encre-faible);
+  font-size: .75rem;
+  margin-bottom: .5rem;
 }
 
 .utilisateur a {
   display: block;
-  color: #1a4f8a;
-  text-decoration: none;
   padding: .15rem 0;
+  color: var(--encre-douce);
 }
 
 .utilisateur a:hover {
-  text-decoration: underline;
+  color: var(--rouge);
+  text-decoration: none;
 }
 
-/* ------------------------------------------- Messages et formulaires --- */
+/* ------------------------------------------------------------ Contenu --- */
 
+.contenu {
+  flex: 1;
+  padding: 2rem 2.25rem 4rem;
+  min-width: 0;
+  max-width: 1280px;
+}
+
+.contenu h1 {
+  /*
+   * clamp(min, souhaite, max) : la taille suit la largeur de la fenetre
+   * entre deux bornes. Un seul reglage remplace les paliers qu'il aurait
+   * fallu ecrire dans chaque media query — et le titre ne saute plus
+   * brutalement d'une taille a l'autre au redimensionnement.
+   */
+  font-size: clamp(1.25rem, 1.05rem + .8vw, 1.5rem);
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: var(--encre);
+  margin-bottom: 1.5rem;
+}
+
+/* Un titre de section n'a pas besoin d'un filet : l'espace au-dessus
+   suffit à séparer, et la page reste plus calme. */
+.titre-section {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--encre);
+  margin: 2.5rem 0 1rem;
+}
+
+.note {
+  font-size: .8125rem;
+  color: var(--encre-faible);
+  line-height: 1.55;
+}
+
+.note-alerte {
+  color: var(--rouge-sombre);
+  margin-top: .4rem;
+}
+
+.vide {
+  font-size: .875rem;
+  color: var(--encre-faible);
+  padding: 1.25rem 0;
+}
+
+.compteur,
+.resume-filtres {
+  font-size: .875rem;
+  color: var(--encre-faible);
+  margin-bottom: .9rem;
+}
+
+/* ------------------------------------------------------- Messages --- */
+
+/*
+ * Un filet de couleur à gauche plutôt qu'un cadre complet : le message
+ * reste lisible, se repère du coin de l'œil, et n'impose pas un
+ * rectangle coloré au milieu de la page.
+ */
 .flash {
-  font-size: .85rem;
-  padding: .6rem .7rem;
-  margin-bottom: 1rem;
-  border: 1px solid;
+  font-size: .875rem;
+  padding: .75rem 1rem;
+  margin-bottom: 1.25rem;
+  border-radius: var(--rayon-petit);
+  border-left: 3px solid;
 }
 
 .flash-succes {
-  color: #1d5c2e;
-  background: #eef7f0;
-  border-color: #b4d8be;
+  color: #0b5c46;
+  background: var(--vert-voile);
+  border-color: var(--vert);
 }
 
 .flash-erreur {
-  color: #8a1a1a;
-  background: #fdf0f0;
-  border-color: #e0b4b4;
+  color: var(--rouge-sombre);
+  background: var(--rouge-voile);
+  border-color: var(--rouge);
 }
+
+/* --------------------------------------------------------- Blocs --- */
 
 .bloc {
-  border: 1px solid #ccc;
-  padding: 1rem 1.2rem 1.2rem;
-  margin-bottom: 1.2rem;
-  max-width: 480px;
+  background: var(--fond);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre-posee);
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  max-width: 520px;
 }
 
-.bloc h2 {
-  font-size: .95rem;
-  margin-bottom: .8rem;
-  padding-bottom: .4rem;
-  border-bottom: 1px solid #eee;
+.bloc-large,
+.colonnes .bloc {
+  max-width: none;
+}
+
+.bloc h2,
+.demande h2 {
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--encre);
+  margin-bottom: 1rem;
 }
 
 .bloc label {
   display: block;
-  font-size: .85rem;
-  margin-top: .75rem;
+  font-size: .8125rem;
+  font-weight: 500;
+  color: var(--encre-douce);
+  margin-top: 1rem;
 }
 
-.bloc input {
+.bloc input,
+.bloc select,
+.bloc textarea {
   width: 100%;
-  padding: .4rem;
-  margin-top: .25rem;
-  border: 1px solid #ccc;
-  font-size: .85rem;
-}
-
-.bloc .btn {
-  margin-top: 1.1rem;
-  padding: .45rem .9rem;
-  border: 1px solid #999;
-  background: #fff;
-  font-size: .85rem;
-  cursor: pointer;
-}
-
-.bloc .btn:hover {
-  background: #f2f2f2;
+  margin-top: .3rem;
 }
 
 .bloc textarea {
-  width: 100%;
-  padding: .4rem;
-  margin-top: .25rem;
-  border: 1px solid #ccc;
-  font-size: .85rem;
-  font-family: inherit;
   resize: vertical;
+  min-height: 4.5rem;
 }
 
 /* Case à cocher : la case et son libellé sur une même ligne, alignés. */
 .bloc label.case {
   display: flex;
   align-items: center;
-  gap: .4rem;
-  margin-top: 1rem;
+  gap: .5rem;
+  margin-top: 1.1rem;
 }
 
 .bloc label.case input {
@@ -227,8 +554,65 @@ body {
   margin: 0;
 }
 
+.colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 1.25rem;
+}
+
+/* --------------------------------------------------------- Boutons --- */
+
+.btn,
+a.btn {
+  display: inline-block;
+  padding: .5rem 1rem;
+  border: 1px solid var(--rouge);
+  border-radius: var(--rayon-petit);
+  background: var(--rouge);
+  color: #fff;
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duree), border-color var(--duree);
+}
+
+.btn:hover,
+a.btn:hover {
+  background: var(--rouge-vif);
+  border-color: var(--rouge-vif);
+  color: #fff;
+  text-decoration: none;
+}
+
+.bloc .btn {
+  margin-top: 1.4rem;
+}
+
+/*
+ * Bouton secondaire : contour seulement.
+ *
+ * Deux boutons pleins côte à côte se disputent le regard et personne ne
+ * sait lequel est l'action attendue. Un seul bouton plein par écran.
+ */
+.btn-petit {
+  padding: .25rem .6rem;
+  font-size: .78125rem;
+  background: var(--fond);
+  border-color: var(--trait-fort);
+  color: var(--encre-douce);
+}
+
+.btn-petit:hover {
+  background: var(--fond-doux);
+  border-color: var(--rouge);
+  color: var(--rouge);
+}
+
 .barre-actions {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 /* ------------------------------------------ Listes de référence --- */
@@ -238,49 +622,43 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: .4rem;
-  padding: .35rem 0;
-  border-bottom: 1px solid #eee;
+  gap: .5rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid var(--trait);
 }
 
 .ligne-reference input[type="text"] {
   flex: 1;
   min-width: 8rem;
-  padding: .25rem .35rem;
-  border: 1px solid #ccc;
-  font-size: .8rem;
-  font-family: inherit;
-  margin: 0;
-  width: auto;
+  padding: .3rem .45rem;
+  font-size: .8125rem;
 }
 
 .ligne-reference select {
-  padding: .25rem;
-  border: 1px solid #ccc;
-  font-size: .8rem;
-  font-family: inherit;
-  margin: 0;
-  width: auto;
+  padding: .3rem .45rem;
+  font-size: .8125rem;
 }
 
 /* Une entrée archivée reste lisible mais visiblement en retrait. */
 .ligne-reference.archive input[type="text"],
 .ligne-reference.archive select {
-  color: #999;
-  background: #fafafa;
+  color: var(--encre-faible);
+  background: var(--fond-doux);
 }
 
 .usage {
   min-width: 2rem;
   text-align: right;
+  font-size: .8125rem;
+  color: var(--encre-faible);
 }
 
 .case-inline {
   display: flex;
   align-items: center;
-  gap: .25rem;
-  font-size: .75rem;
-  color: #666;
+  gap: .35rem;
+  font-size: .78125rem;
+  color: var(--encre-faible);
   white-space: nowrap;
   margin: 0;
 }
@@ -296,27 +674,27 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: .5rem .8rem;
-  padding: .8rem;
-  margin-bottom: 1rem;
-  border: 1px solid #ccc;
-  background: #fafafa;
+  gap: .6rem .9rem;
+  padding: .9rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: var(--fond-doux);
 }
 
 .filtres label {
   display: block;
-  font-size: .7rem;
+  font-size: .6875rem;
+  font-weight: 600;
   text-transform: uppercase;
-  color: #777;
-  margin-bottom: .15rem;
+  letter-spacing: .05em;
+  color: var(--encre-faible);
+  margin-bottom: .2rem;
 }
 
 .filtres select,
 .filtres input {
-  padding: .3rem;
-  border: 1px solid #ccc;
-  font-size: .8rem;
-  font-family: inherit;
+  font-size: .8125rem;
 }
 
 /* Chaque libellé reste solidaire de son champ quand la ligne se replie. */
@@ -331,11 +709,6 @@ body {
   align-self: end;
 }
 
-.resume-filtres {
-  font-size: .85rem;
-  margin-bottom: .8rem;
-}
-
 /* Colonne d'actions : les boutons restent sur une ligne, séparés. */
 .col-actions {
   white-space: nowrap;
@@ -344,7 +717,7 @@ body {
 .col-actions a,
 .col-actions form {
   display: inline-block;
-  margin-right: .3rem;
+  margin-right: .4rem;
   vertical-align: middle;
 }
 
@@ -352,8 +725,9 @@ body {
   display: flex;
   gap: 1rem;
   align-items: center;
-  margin-top: .8rem;
-  font-size: .85rem;
+  margin-top: 1rem;
+  font-size: .875rem;
+  color: var(--encre-faible);
 }
 
 /* Formulaire réduit à un bouton, à l'intérieur d'une cellule de tableau. */
@@ -361,61 +735,458 @@ body {
   display: inline;
 }
 
-.btn-petit {
-  padding: .2rem .5rem;
-  font-size: .75rem;
-}
-
 /* Formulaires d'action compacts, dans une cellule de tableau. */
 .form-tranche {
   display: flex;
-  gap: .25rem;
+  gap: .3rem;
   align-items: center;
-  margin-bottom: .25rem;
+  margin-bottom: .3rem;
   white-space: nowrap;
 }
 
 .form-tranche .mini {
-  padding: .15rem .3rem;
-  border: 1px solid #ccc;
-  font-size: .75rem;
-  font-family: inherit;
-  width: 7rem;
+  padding: .2rem .35rem;
+  font-size: .78125rem;
 }
 
-.bloc select {
-  width: 100%;
-  padding: .4rem;
-  margin-top: .25rem;
-  border: 1px solid #ccc;
-  font-size: .85rem;
-  font-family: inherit;
+/*
+ * Texte réservé aux lecteurs d'écran.
+ *
+ * display:none le retirerait AUSSI de la lecture vocale — ce qui est
+ * exactement l'inverse du but. On le sort donc de l'écran en le réduisant
+ * à un pixel : invisible à l'œil, toujours présent pour l'assistance.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-/* Un lien qui doit avoir l'apparence d'un bouton. */
-a.btn {
+/* --------------------------------- Barre de filtres du tableau de bord --- */
+
+.barre-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: .7rem .9rem;
+  background: var(--fond-doux);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  font-size: .8125rem;
+}
+
+.barre-filtres > label {
+  color: var(--encre-faible);
+  font-size: .78125rem;
+}
+
+.filtre-groupe {
+  display: inline-flex;
+  background: var(--fond);
+  border: 1px solid var(--trait-fort);
+  border-radius: var(--rayon-petit);
+  overflow: hidden;
+}
+
+/*
+ * Des boutons radio DÉGUISÉS en boutons, et non de vrais boutons.
+ *
+ * On masque la puce ronde mais on garde l'<input>, parce que c'est lui
+ * qui rend le groupe utilisable au clavier et compréhensible par un
+ * lecteur d'écran (« choix 2 sur 3 »). Des <a> stylés en onglets
+ * auraient l'air identiques et perdraient tout cela.
+ */
+.filtre-choix {
+  padding: .3rem .8rem;
+  cursor: pointer;
+  color: var(--encre-douce);
+  border-right: 1px solid var(--trait-fort);
+  transition: background var(--duree);
+}
+
+.filtre-choix:last-child {
+  border-right: none;
+}
+
+.filtre-choix:hover {
+  background: var(--fond-doux);
+}
+
+.filtre-choix input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/*
+ * DEUX RÈGLES POUR LE MÊME ÉTAT, ET LES DEUX SONT NÉCESSAIRES.
+ *
+ * .filtre-actif vient du SERVEUR : c'est le filtre réellement appliqué à
+ * ce qui est affiché. :has(input:checked) vient du NAVIGATEUR : il réagit
+ * au clic immédiatement.
+ *
+ * Sans la seconde, cliquer sur « BDE » ne changeait rien à l'écran — la
+ * puce ronde étant masquée, il ne se passait visuellement RIEN — et on en
+ * concluait que le filtre ne marchait pas. C'était bien le cas signalé.
+ */
+.filtre-actif,
+.filtre-choix:has(input:checked) {
+  background: var(--rouge);
+  color: #fff;
+}
+
+.filtre-actif:hover,
+.filtre-choix:has(input:checked):hover {
+  background: var(--rouge-vif);
+}
+
+/* L'anneau de focus doit rester visible alors que l'input est masqué :
+   sinon on navigue au clavier sans savoir où l'on se trouve. */
+.filtre-choix:focus-within {
+  outline: 2px solid var(--rouge);
+  outline-offset: -2px;
+}
+
+/* ------------------------------- Menu déroulant « Clubs » à cocher --- */
+
+/*
+ * <details>/<summary> est la balise native du « panneau qui s'ouvre ».
+ * Le navigateur gère l'ouverture, le clavier et l'annonce aux lecteurs
+ * d'écran — d'où le choix de la détourner plutôt que de reconstruire un
+ * menu à coups de div et de script.
+ *
+ * position: relative sert de point d'ancrage au panneau, qui est en
+ * position absolue : sans cela il se placerait par rapport à la page et
+ * atterrirait n'importe où.
+ */
+.filtre-clubs {
+  position: relative;
+}
+
+.filtre-clubs > summary {
   display: inline-block;
-  padding: .4rem .8rem;
-  border: 1px solid #999;
-  background: #fff;
-  color: #222;
-  font-size: .85rem;
-  text-decoration: none;
+  padding: .3rem .8rem;
+  background: var(--fond);
+  border: 1px solid var(--trait-fort);
+  border-radius: var(--rayon-petit);
+  color: var(--encre-douce);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;   /* masque le triangle par défaut (Firefox) */
 }
 
-a.btn:hover {
-  background: #f2f2f2;
+/* Idem pour les navigateurs WebKit, qui utilisent un pseudo-élément. */
+.filtre-clubs > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Notre propre indicateur, qui pivote à l'ouverture : sans repère
+   visuel, rien ne dit que l'élément est dépliable. */
+.filtre-clubs > summary::after {
+  content: " ▾";
+  display: inline-block;
+  transition: transform var(--duree);
+}
+
+.filtre-clubs[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+/*
+ * Même retour immédiat que pour les autres choix : dès qu'une case est
+ * cochée, le bouton se colore sans attendre le rechargement.
+ *
+ * ⚠ LA SECONDE RÈGLE N'EST PAS REDONDANTE. « .filtre-clubs > summary »
+ * plus haut est PLUS SPÉCIFIQUE que « .filtre-actif » (une classe + un
+ * élément contre une classe) : sans la nommer explicitement ici, l'état
+ * posé par le serveur serait écrasé par le style de repos, et le bouton
+ * resterait blanc alors que le filtre est bien appliqué. C'est le genre
+ * de détail qui redonne exactement le bug d'origine.
+ */
+.filtre-clubs:has(input:checked) > summary,
+.filtre-clubs > summary.filtre-actif {
+  background: var(--rouge);
+  border-color: var(--rouge);
+  color: #fff;
+}
+
+.filtre-clubs-panneau {
+  position: absolute;
+  z-index: 10;          /* au-dessus du contenu, sinon il passe dessous */
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 14rem;
+  max-height: 60vh;
+  overflow-y: auto;     /* un BDE avec trente clubs ne déborde pas */
+  padding: .6rem .75rem;
+  background: var(--fond);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre-flottee);
+}
+
+.filtre-clubs-panneau .case-inline {
+  display: flex;
+  padding: .3rem 0;
+  font-size: .8125rem;
+  color: var(--encre-douce);
+  cursor: pointer;
+}
+
+.filtre-clubs-panneau hr {
+  margin: .45rem 0;
+  border: none;
+  border-top: 1px solid var(--trait);
+}
+
+/* Sur un écran étroit, un panneau ancré à gauche déborderait de la page. */
+@media (max-width: 560px) {
+  .filtre-clubs-panneau {
+    left: auto;
+    right: 0;
+  }
+}
+
+/* --------------------------------------------------------- Tableaux --- */
+
+/*
+ * Aucune bordure verticale, un filet horizontal par ligne.
+ *
+ * Le quadrillage complet appartient au tableur. Sur une page web il
+ * ajoute une trentaine de traits qui n'apportent rien : l'alignement des
+ * colonnes suffit déjà à dire où commence et où finit chaque champ.
+ */
+.tableau-conteneur {
+  overflow-x: auto;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre-posee);
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+
+.tableau th {
+  padding: .7rem .85rem;
+  background: var(--fond-doux);
+  border-bottom: 1px solid var(--trait);
+  color: var(--encre-faible);
+  font-size: .6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tableau td {
+  padding: .7rem .85rem;
+  border-bottom: 1px solid var(--trait);
+  vertical-align: middle;
+}
+
+.tableau tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tableau tbody tr:hover {
+  background: var(--fond-doux);
+}
+
+.tableau tfoot th {
+  background: var(--fond-doux);
+  border-top: 1px solid var(--trait-fort);
+  border-bottom: none;
+  color: var(--encre);
+  font-size: .875rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/*
+ * Les montants alignés à DROITE et en chiffres tabulaires.
+ *
+ * font-variant-numeric donne à tous les chiffres la même largeur : les
+ * unités, dizaines et centaines se superposent alors d'une ligne à
+ * l'autre, et on compare deux montants d'un coup d'œil sans les lire.
+ */
+.col-montant {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tableau th.col-montant,
+.tableau tfoot th.col-montant {
+  text-align: right;
+}
+
+.recette {
+  color: var(--vert);
+}
+
+.depense {
+  color: var(--rouge);
+}
+
+/* Ligne archivée ou annulée : effacée, mais toujours lisible. */
+.ligne-annulee td {
+  color: var(--encre-faible);
+  text-decoration: line-through;
+  text-decoration-color: var(--trait-fort);
+}
+
+/*
+ * Lignes signalées : un filet vertical à gauche plutôt qu'un fond saturé.
+ *
+ * Un fond rouge sur toute la ligne rend le texte pénible à lire, et si
+ * trois lignes sont concernées la page entière devient rouge — le signal
+ * se dissout dans le bruit.
+ */
+.ligne-rouge td:first-child {
+  box-shadow: inset 3px 0 0 var(--rouge);
+}
+
+.ligne-rouge td {
+  background: var(--rouge-voile);
+}
+
+.ligne-orange td:first-child {
+  box-shadow: inset 3px 0 0 var(--rouge-clair);
+}
+
+/* ---------------------------------------------------------- Badges --- */
+
+.badge {
+  display: inline-block;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  border: 1px solid var(--trait-fort);
+  background: var(--fond);
+  color: var(--encre-faible);
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/*
+ * Deux degrés de gravité, une seule teinte : plein pour « à découvert »,
+ * contour pour « solde faible ». L'intensité porte l'urgence, pas une
+ * seconde couleur qu'il faudrait apprendre.
+ */
+.badge-rouge {
+  background: var(--rouge);
+  border-color: var(--rouge);
+  color: #fff;
+}
+
+.badge-orange {
+  background: var(--rouge-voile);
+  border-color: var(--rouge-pale);
+  color: var(--rouge-sombre);
+}
+
+/* ------------------------------------------------ Chiffres clés (KPI) --- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.kpi {
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre-posee);
+  background: var(--fond);
+}
+
+.kpi-valeur {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-libelle {
+  margin-top: .15rem;
+  font-size: .78125rem;
+  color: var(--encre-faible);
+}
+
+/* Le seul KPI qui change de couleur : celui qui annonce un problème. */
+.kpi-alerte {
+  border-color: var(--rouge-pale);
+  background: var(--rouge-voile);
+}
+
+.kpi-alerte .kpi-valeur {
+  color: var(--rouge-sombre);
+}
+
+/* -------------------------------------------------- Listes diverses --- */
+
+.liste-alertes {
+  list-style: none;
+  font-size: .875rem;
+}
+
+.liste-alertes li {
+  padding: .6rem 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.liste-alertes li:last-child {
+  border-bottom: none;
+}
+
+.liste-clubs {
+  list-style: none;
+}
+
+.club {
+  padding: .85rem 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.club-nom {
+  font-weight: 600;
+  color: var(--encre);
+}
+
+.club-description {
+  font-size: .8125rem;
+  color: var(--encre-faible);
 }
 
 .infos {
-  font-size: .85rem;
+  font-size: .875rem;
 }
 
 .infos dt {
-  color: #666;
-  font-size: .75rem;
+  font-size: .6875rem;
+  font-weight: 600;
   text-transform: uppercase;
-  margin-top: .6rem;
+  letter-spacing: .05em;
+  color: var(--encre-faible);
+  margin-top: .9rem;
 }
 
 .infos dt:first-child {
@@ -423,375 +1194,156 @@ a.btn:hover {
 }
 
 .infos dd {
-  margin-left: 0;
-}
-
-.note {
-  color: #777;
-  font-size: .75rem;
-}
-
-/* ------------------------------------------------------------ Contenu --- */
-
-.contenu {
-  flex: 1;
-  padding: 1.5rem;
-  min-width: 0;
-}
-
-.contenu h1 {
-  font-size: 1.2rem;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: .5rem;
-  margin-bottom: 1rem;
-}
-
-.compteur,
-.vide {
-  font-size: .85rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-/* ------------------------------------------------------ Liste de clubs --- */
-
-.liste-clubs {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
-}
-
-.club {
-  border: 1px solid #ccc;
-  padding: 1rem;
-}
-
-.club-nom {
-  font-size: .95rem;
-  margin-bottom: .25rem;
-}
-
-.club-description {
-  font-size: .8rem;
-  color: #666;
-}
-
-/* --------------------------------------------------------- Connexion --- */
-
-/* La page de connexion n'a pas de barre latérale : on annule la mise en
-   page en deux colonnes du body et on centre le formulaire. */
-body.page-login {
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.login {
-  border: 1px solid #ccc;
-  padding: 2rem;
-  width: 100%;
-  max-width: 340px;
-}
-
-.login h1 {
-  font-size: 1.1rem;
-  margin-bottom: .25rem;
-}
-
-.login-sous-titre {
-  font-size: .8rem;
-  color: #666;
-  margin-bottom: 1.5rem;
-}
-
-.login-erreur {
-  font-size: .8rem;
-  color: #8a1a1a;
-  background: #fdf0f0;
-  border: 1px solid #e0b4b4;
-  padding: .5rem .6rem;
-  margin-bottom: 1rem;
-}
-
-.login label {
-  display: block;
-  font-size: .85rem;
-  margin-top: .75rem;
-}
-
-.login input {
-  width: 100%;
-  padding: .4rem;
-  margin-top: .25rem;
-  border: 1px solid #ccc;
-  font-size: .85rem;
-}
-
-.login .btn {
-  display: block;
-  width: 100%;
-  margin-top: 1.25rem;
-  padding: .5rem;
-  border: 1px solid #999;
-  background: #fff;
-  font-size: .85rem;
-  cursor: pointer;
-}
-
-.login .btn:hover {
-  background: #f2f2f2;
-}
-
-/* ------------------------------------------------------------ Tableaux --- */
-
-.titre-section {
-  font-size: .95rem;
-  margin: 1.4rem 0 .7rem;
-}
-
-/* Sur écran étroit, c'est le tableau qui défile horizontalement,
-   jamais la page entière. */
-.tableau-conteneur {
-  overflow-x: auto;
-  border: 1px solid #ccc;
-}
-
-.tableau {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .85rem;
-}
-
-.tableau th,
-.tableau td {
-  padding: .45rem .6rem;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-  white-space: nowrap;
-}
-
-.tableau th {
-  background: #f7f7f7;
-  font-size: .75rem;
-  text-transform: uppercase;
-  color: #555;
-}
-
-.tableau tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.col-montant {
-  text-align: right;
-}
-
-.tableau tfoot th {
-  background: #f7f7f7;
-  border-top: 2px solid #ccc;
-  text-transform: none;
-  font-size: .85rem;
-  color: #222;
-}
-
-/* Lignes signalées : un fond discret, jamais la couleur seule — un écran
-   mal réglé ou un daltonisme ne doivent pas faire perdre l'information,
-   d'où le badge textuel qui accompagne toujours la couleur. */
-.ligne-rouge {
-  background: #fdf0f0;
-}
-
-.ligne-orange {
-  background: #fdf8ee;
-}
-
-.ligne-annulee {
-  color: #999;
-  text-decoration: line-through;
-}
-
-.badge {
-  display: inline-block;
-  padding: .05rem .35rem;
-  font-size: .7rem;
-  border: 1px solid;
-  white-space: nowrap;
-}
-
-.badge-rouge {
-  color: #8a1a1a;
-  border-color: #e0b4b4;
-  background: #fdf0f0;
-}
-
-.badge-orange {
-  color: #8a5a1a;
-  border-color: #e0cdb4;
-  background: #fdf8ee;
-}
-
-/* Pastille du menu : nombre de demandes en attente. */
-.pastille {
-  display: inline-block;
-  min-width: 1.1rem;
-  padding: 0 .25rem;
-  border-radius: .6rem;
-  background: #8a5a1a;
-  color: #fff;
-  font-size: .7rem;
-  text-align: center;
-  line-height: 1.1rem;
-}
-
-/* ----------------------------------------------- Demandes de remb. --- */
-
-.demande h2 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .5rem;
-}
-
-/* Une demande refusée ou déjà payée n'appelle plus d'action : on
-   l'estompe pour que l'œil aille d'abord sur celles en attente. */
-.demande-refuse,
-.demande-rembourse {
-  opacity: .7;
+  color: var(--encre);
 }
 
 .actions-demande {
-  margin-top: .8rem;
-  padding-top: .8rem;
-  border-top: 1px solid #eee;
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  align-items: flex-end;
+  margin-top: 1rem;
 }
 
 .actions-demande form {
-  flex: 1;
-  min-width: 240px;
+  display: inline-block;
 }
 
-.recette {
-  color: #1d5c2e;
+.demande-rembourse {
+  border-left: 3px solid var(--vert);
 }
 
-.depense {
-  color: #8a1a1a;
+/* ------------------------------------------------- Graphiques SVG --- */
+
+/*
+ * Le SVG porte un viewBox : il est dessiné dans un repère fixe, et c'est
+ * le navigateur qui l'adapte à la place disponible. D'où width:100% et
+ * height:auto — on ne fixe JAMAIS de hauteur en pixels, sinon le dessin
+ * se déforme dès qu'on change de largeur d'écran.
+ */
+.graphique {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: .5rem 0;
+  font-family: inherit;   /* le SVG n'hérite pas de la police du document */
 }
 
-/* ------------------------------------------------------- Tableau de bord --- */
-
-.kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: .8rem;
-  margin-bottom: .8rem;
+/* Un curseur qui annonce l'infobulle native des balises <title>. */
+.graphique rect,
+.graphique circle {
+  cursor: help;
 }
 
-.kpi {
-  border: 1px solid #ccc;
-  padding: .8rem 1rem;
+/* --- Repères de fond --- */
+
+.g-grille {
+  stroke: var(--trait);
+  stroke-width: 1;
 }
 
-.kpi-valeur {
-  font-size: 1.25rem;
-  font-weight: 600;
+/* La ligne du zéro est ROUGE : sur un compte, c'est le seul repère dont
+   le franchissement change la nature de la situation. */
+.g-zero {
+  stroke: var(--rouge);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: .55;
 }
 
-.kpi-libelle {
-  font-size: .75rem;
-  text-transform: uppercase;
-  color: #777;
-  margin-top: .2rem;
+.g-axe {
+  fill: var(--encre-faible);
+  font-size: 11px;
 }
 
-.kpi-alerte {
-  border-color: #e0b4b4;
-  background: #fdf0f0;
+.g-libelle {
+  fill: var(--encre-douce);
+  font-size: 12px;
 }
 
-.bloc-large {
-  max-width: none;
+.g-valeur {
+  fill: var(--encre-faible);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Deux colonnes côte à côte, empilées sur écran étroit. */
-.colonnes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.2rem;
-  align-items: start;
+.g-piste {
+  fill: var(--fond-doux);
 }
 
-.colonnes .bloc {
-  max-width: none;
+/* --- Séries : sortant en rouge, entrant en vert --- */
+
+.g-depense {
+  fill: var(--rouge);
 }
 
-.liste-alertes {
-  list-style: none;
-  font-size: .85rem;
+.g-recette {
+  fill: var(--vert);
 }
 
-.liste-alertes li {
-  padding: .3rem 0;
-  border-bottom: 1px solid #eee;
+/*
+ * Les trois états d'un remboursement, en une seule teinte.
+ *
+ * Ce sont les étapes d'UN MÊME processus, pas trois catégories
+ * indépendantes : une progression se lit en intensité, pas en changeant
+ * de couleur à chaque étape.
+ *
+ * Le plus vif est posé sur « en attente », c'est-à-dire sur ce qui
+ * réclame une action. Le gris est réservé à ce qui est réglé — cet
+ * argent est sorti, il n'appelle plus rien.
+ */
+.g-attente {
+  fill: var(--rouge);
 }
 
-.liste-alertes li:last-child {
-  border-bottom: none;
+.g-valide {
+  fill: var(--rouge-clair);
 }
 
-/* --------------------------------------------------- Graphiques CSS --- */
-
-/* Une barre est un simple div dont la largeur est un pourcentage :
-   aucune bibliothèque, rien à charger, et cela s'imprime correctement. */
-.graphe {
-  font-size: .8rem;
+.g-rembourse {
+  fill: var(--trait-fort);
 }
 
-.graphe-ligne {
-  display: grid;
-  grid-template-columns: 5.5rem 1fr 7.5rem;
-  gap: .5rem;
-  align-items: center;
-  padding: .2rem 0;
+/* --- Courbe du solde --- */
+
+.g-courbe {
+  fill: none;
+  stroke: var(--encre);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-.graphe-label {
-  color: #555;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.g-aire {
+  fill: var(--encre);
+  fill-opacity: .06;
 }
 
-.graphe-barres {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.g-point {
+  fill: var(--fond);
+  stroke: var(--encre);
+  stroke-width: 2;
 }
 
-.barre {
-  height: 9px;
-  min-width: 1px;   /* une valeur non nulle reste visible */
-  border-radius: 2px;
+/* Le pointillé dit « attendu, pas constaté ». Tracer la prévision du même
+   trait que le réalisé ferait lire comme acquis un argent pas encore
+   arrivé. */
+.g-projection {
+  fill: none;
+  stroke: var(--encre-faible);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  stroke-linejoin: round;
 }
 
-.barre-recette {
-  background: #2f7d46;
+/* L'an dernier : un repère d'arrière-plan, jamais le sujet. */
+.g-comparaison {
+  fill: none;
+  stroke: var(--trait-fort);
+  stroke-width: 2;
+  stroke-linejoin: round;
 }
 
-.barre-depense {
-  background: #a83232;
-}
-
-.graphe-valeur {
-  text-align: right;
-  font-size: .72rem;
-  white-space: nowrap;
-}
+/* --- Pastilles de légende --- */
 
 .puce {
   display: inline-block;
@@ -801,40 +1353,98 @@ body.page-login {
   vertical-align: middle;
 }
 
-.puce-recette {
-  background: #2f7d46;
+.puce-recette    { background: var(--vert); }
+.puce-depense    { background: var(--rouge); }
+.puce-attente    { background: var(--rouge); }
+.puce-valide     { background: var(--rouge-clair); }
+.puce-rembourse  { background: var(--trait-fort); }
+.puce-solde      { background: var(--encre); }
+.puce-comparaison{ background: var(--trait-fort); }
+
+/*
+ * La pastille de la projection est HACHURÉE, pour rappeler le pointillé
+ * du tracé : une pastille pleine dirait « constaté » alors qu'il s'agit
+ * d'argent attendu.
+ */
+.puce-projection {
+  background: repeating-linear-gradient(
+    90deg, var(--encre-faible) 0 3px, transparent 3px 6px
+  );
+  border: 1px solid var(--encre-faible);
 }
 
-.puce-depense {
-  background: #a83232;
+/* ------------------------------------------------------ Connexion --- */
+
+body.page-login {
+  display: block;
+  background: var(--fond-doux);
 }
 
-@media (max-width: 560px) {
-  .graphe-ligne {
-    grid-template-columns: 4.5rem 1fr;
-  }
-
-  /* Sur mobile, la colonne des montants passe sous la barre. */
-  .graphe-valeur {
-    grid-column: 2;
-    text-align: left;
-  }
+.login {
+  max-width: 380px;
+  margin: 8vh auto;
+  padding: 2rem 2rem 2.25rem;
+  background: var(--fond);
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre-flottee);
 }
 
-/* -------------------------------------------------------------- Erreur --- */
+.login h1 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: var(--encre);
+}
+
+.login-sous-titre {
+  font-size: .875rem;
+  color: var(--encre-faible);
+  margin-bottom: 1.5rem;
+}
+
+.login label {
+  display: block;
+  font-size: .8125rem;
+  font-weight: 500;
+  margin-top: 1rem;
+}
+
+.login input {
+  width: 100%;
+  margin-top: .3rem;
+}
+
+.login .btn {
+  width: 100%;
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.login-erreur {
+  font-size: .875rem;
+  color: var(--rouge-sombre);
+  background: var(--rouge-voile);
+  border-left: 3px solid var(--rouge);
+  border-radius: var(--rayon-petit);
+  padding: .7rem .9rem;
+  margin-bottom: 1rem;
+}
+
+/* -------------------------------------------------------- Erreur --- */
 
 .erreur {
-  padding: 2rem;
+  padding: 3rem 2rem;
 }
 
 .erreur h1 {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
+  color: var(--encre);
   margin-bottom: .5rem;
 }
 
 .erreur p {
-  font-size: .9rem;
-  margin-bottom: .5rem;
+  color: var(--encre-faible);
 }
 
 /* ------------------------------------------------------------- Mobile --- */
@@ -847,6 +1457,105 @@ body.page-login {
   .sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--trait);
+
+    /*
+     * On ANNULE le menu figé sur mobile : la barre passe au-dessus du
+     * contenu et occupe toute la largeur. Figée sur 100vh, elle
+     * remplirait l'écran entier et il faudrait la faire défiler avant
+     * d'apercevoir la moindre ligne de la page.
+     */
+    position: static;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .contenu {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .bloc {
+    padding: 1rem 1.15rem 1.25rem;
+  }
+}
+
+/* ------------------------------------------------------- Impression --- */
+
+/*
+ * UNE TRÉSORERIE S'IMPRIME : bilan présenté en réunion de bureau, pièce
+ * jointe à un compte rendu, justificatif remis à l'école. Sans ces
+ * quelques règles, on obtient le menu de navigation en haut de la
+ * feuille, des boutons inutiles au milieu, et des tableaux coupés
+ * n'importe où.
+ *
+ * C'est aussi l'avantage des graphiques en SVG : ils s'impriment nets,
+ * là où un graphique dessiné en JavaScript sort flou ou pas du tout.
+ */
+@media print {
+  body {
+    display: block;
+    font-size: 11pt;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Tout ce qui sert à NAVIGUER ou à AGIR n'a aucun sens sur papier. */
+  .sidebar,
+  .barre-filtres,
+  .filtres,
+  .barre-actions,
+  .pagination,
+  .col-actions,
+  .actions-demande,
+  .btn,
+  a.btn,
+  button,
+  .form-ligne,
+  .form-tranche {
+    display: none !important;
+  }
+
+  .contenu {
+    padding: 0;
+    max-width: none;
+  }
+
+  /* Les ombres et les fonds gris deviennent du gris sale à l'impression :
+     on revient à des filets francs. */
+  .bloc,
+  .kpi,
+  .tableau-conteneur {
+    box-shadow: none;
+    border-color: #999;
+    break-inside: avoid;
+  }
+
+  .tableau th {
+    background: #fff;
+    border-bottom: 1px solid #000;
+    color: #000;
+  }
+
+  /* Une ligne de tableau coupée entre deux pages est illisible. */
+  .tableau tr {
+    break-inside: avoid;
+  }
+
+  /* Un titre seul en bas de page, dont le contenu part à la suivante. */
+  h1, h2, .titre-section {
+    break-after: avoid;
+  }
+
+  .graphique {
+    break-inside: avoid;
+  }
+
+  /*
+   * Les liens deviennent du texte : leur adresse est perdue à
+   * l'impression, autant ne pas les faire ressortir pour rien.
+   */
+  a {
+    color: #000;
+    text-decoration: none;
   }
 }

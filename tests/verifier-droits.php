@@ -91,7 +91,7 @@ const ACTIONS_POST_SEULEMENT = [
     'transaction-supprimer', 'justificatif-supprimer', 'remboursement-enregistrer',
     'remboursement-decider', 'remboursement-payer', 'remboursement-supprimer',
     'budget-enregistrer', 'tranche-versee', 'tranche-annulee', 'tranche-rouverte',
-    'exercice-creer', 'exercice-activer', 'exercice-consulter',
+    'exercice-creer', 'exercice-activer', 'exercice-enveloppe', 'exercice-consulter',
     'utilisateur-enregistrer', 'utilisateur-reinitialiser',
     'categorie-enregistrer', 'pole-enregistrer',
 ];

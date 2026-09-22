@@ -27,7 +27,7 @@ class AuthController
     {
         // Déjà connecté ? Inutile de redemander : on renvoie à l'accueil.
         if (est_connecte()) {
-            rediriger('?page=clubs');
+            rediriger('?page=dashboard');
         }
 
         $titre = 'Connexion';
@@ -115,8 +115,14 @@ class AuthController
          * Sans elle, la page de résultat resterait associée à l'envoi du
          * formulaire : un simple rafraîchissement proposerait de renvoyer les
          * données, et la touche "précédent" produirait des avertissements.
+         *
+         * DESTINATION : le TABLEAU DE BORD, et non la liste des clubs.
+         * C'est la page qui répond à la question qu'on se pose en ouvrant
+         * l'application — où en est la trésorerie — alors que la liste des
+         * clubs ne servait de point d'entrée que parce qu'elle a été la
+         * première page écrite du projet.
          */
-        rediriger('?page=clubs');
+        rediriger('?page=dashboard');
     }
 
     /**

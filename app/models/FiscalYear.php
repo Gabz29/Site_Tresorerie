@@ -30,7 +30,7 @@ class FiscalYear
     public static function getAll(): array
     {
         return db()->query(
-            'SELECT FiscalYearID, Year, Start_Date, End_Date, IsActive
+            'SELECT FiscalYearID, Year, Start_Date, End_Date, Enveloppe_Clubs, IsActive
              FROM fiscalyear
              ORDER BY Start_Date DESC'
         )->fetchAll();
@@ -48,7 +48,7 @@ class FiscalYear
     public static function getActive(): ?array
     {
         $ligne = db()->query(
-            'SELECT FiscalYearID, Year, Start_Date, End_Date, IsActive
+            'SELECT FiscalYearID, Year, Start_Date, End_Date, Enveloppe_Clubs, IsActive
              FROM fiscalyear
              WHERE IsActive = 1
              LIMIT 1'
@@ -63,9 +63,40 @@ class FiscalYear
     public static function findById(int $id): ?array
     {
         $stmt = db()->prepare(
-            'SELECT FiscalYearID, Year, Start_Date, End_Date, IsActive
+            'SELECT FiscalYearID, Year, Start_Date, End_Date, Enveloppe_Clubs, IsActive
              FROM fiscalyear
              WHERE FiscalYearID = :id'
+        );
+
+        $stmt->execute([':id' => $id]);
+        $ligne = $stmt->fetch();
+
+        return $ligne === false ? null : $ligne;
+    }
+
+    /**
+     * L'exercice qui précède celui-ci, ou null s'il n'y en a pas.
+     *
+     * « Précède » se juge sur les DATES, pas sur l'identifiant : rien ne
+     * garantit que les exercices aient été saisis dans l'ordre
+     * chronologique. Quelqu'un qui ressaisirait une vieille année pour
+     * compléter l'historique lui donnerait un identifiant élevé, et un
+     * FiscalYearID - 1 désignerait alors n'importe quoi.
+     *
+     * Sert à comparer la courbe du solde à celle de l'an dernier — la
+     * question que se pose tout trésorier : « où en est-on par rapport à
+     * l'année dernière à la même date ? »
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function precedent(int $id): ?array
+    {
+        $stmt = db()->prepare(
+            'SELECT FiscalYearID, Year, Start_Date, End_Date, Enveloppe_Clubs, IsActive
+             FROM fiscalyear
+             WHERE Start_Date < (SELECT Start_Date FROM fiscalyear WHERE FiscalYearID = :id)
+             ORDER BY Start_Date DESC
+             LIMIT 1'
         );
 
         $stmt->execute([':id' => $id]);
@@ -94,7 +125,7 @@ class FiscalYear
     public static function trouverParDate(string $date): ?array
     {
         $stmt = db()->prepare(
-            'SELECT FiscalYearID, Year, Start_Date, End_Date, IsActive
+            'SELECT FiscalYearID, Year, Start_Date, End_Date, Enveloppe_Clubs, IsActive
              FROM fiscalyear
              WHERE :date BETWEEN Start_Date AND End_Date
              LIMIT 1'
@@ -155,20 +186,36 @@ class FiscalYear
     /**
      * Crée un exercice (inactif par défaut) et renvoie son identifiant.
      */
-    public static function create(string $libelle, string $debut, string $fin): int
+    public static function create(string $libelle, string $debut, string $fin, string $enveloppeClubs = '0'): int
     {
         $stmt = db()->prepare(
-            'INSERT INTO fiscalyear (Year, Start_Date, End_Date, IsActive)
-             VALUES (:libelle, :debut, :fin, 0)'
+            'INSERT INTO fiscalyear (Year, Start_Date, End_Date, Enveloppe_Clubs, IsActive)
+             VALUES (:libelle, :debut, :fin, :enveloppe, 0)'
         );
 
         $stmt->execute([
-            ':libelle' => $libelle,
-            ':debut'   => $debut,
-            ':fin'     => $fin,
+            ':libelle'   => $libelle,
+            ':debut'     => $debut,
+            ':fin'       => $fin,
+            ':enveloppe' => $enveloppeClubs,
         ]);
 
         return (int) db()->lastInsertId();
+    }
+
+    /**
+     * Met à jour l'enveloppe reçue de l'ISEN pour les clubs.
+     *
+     * Elle peut être révisée en cours d'année : l'école n'annonce pas
+     * toujours le montant définitif en septembre.
+     */
+    public static function majEnveloppeClubs(int $id, string $montant): void
+    {
+        $stmt = db()->prepare(
+            'UPDATE fiscalyear SET Enveloppe_Clubs = :montant WHERE FiscalYearID = :id'
+        );
+
+        $stmt->execute([':montant' => $montant, ':id' => $id]);
     }
 
     /**

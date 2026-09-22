@@ -110,6 +110,7 @@ $sansJeton = [
     'remboursement-decider'   => ['id' => 1, 'statut' => 'valide'],
     'budget-enregistrer'      => ['club' => 2, 'montant' => '100'],
     'exercice-activer'        => ['id' => 1],
+    'exercice-enveloppe'      => ['id' => 1, 'enveloppe' => '99999'],
     'utilisateur-enregistrer' => ['prenom' => 'X', 'nom' => 'Y'],
     'categorie-enregistrer'   => ['nom' => 'Pirate', 'type' => 'depense'],
     'pole-enregistrer'        => ['nom' => 'Pirate'],

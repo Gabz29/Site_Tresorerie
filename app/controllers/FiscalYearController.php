@@ -30,7 +30,7 @@ class FiscalYearController
         $actif      = FiscalYear::getActive();
         $flash      = lire_flash();
         $erreur     = '';
-        $saisie     = ['libelle' => '', 'debut' => '', 'fin' => ''];
+        $saisie     = ['libelle' => '', 'debut' => '', 'fin' => '', 'enveloppe' => ''];
 
         require __DIR__ . '/../views/fiscalyear/index.php';
     }
@@ -47,7 +47,16 @@ class FiscalYearController
         $debut   = trim((string) ($_POST['debut'] ?? ''));
         $fin     = trim((string) ($_POST['fin'] ?? ''));
 
+        // Facultative : l'ISEN n'annonce pas toujours le montant en
+        // septembre. Vide = 0, et le chiffre se corrigera plus tard.
+        $enveloppeSaisie = trim((string) ($_POST['enveloppe'] ?? ''));
+        $enveloppe       = $this->normaliserMontant($enveloppeSaisie);
+
         $erreur = $this->validerExercice($libelle, $debut, $fin);
+
+        if ($erreur === '' && $enveloppeSaisie !== '' && !$this->estUnMontant($enveloppe)) {
+            $erreur = 'L\'enveloppe des clubs doit être un montant (ex. 12000 ou 12000,50).';
+        }
 
         if ($erreur !== '') {
             // On réaffiche la page avec la saisie conservée, plutôt que de
@@ -56,13 +65,18 @@ class FiscalYearController
             $exercices = FiscalYear::getAll();
             $actif     = FiscalYear::getActive();
             $flash     = null;
-            $saisie    = ['libelle' => $libelle, 'debut' => $debut, 'fin' => $fin];
+            $saisie    = [
+                'libelle'   => $libelle,
+                'debut'     => $debut,
+                'fin'       => $fin,
+                'enveloppe' => $enveloppeSaisie,
+            ];
 
             require __DIR__ . '/../views/fiscalyear/index.php';
             return;
         }
 
-        FiscalYear::create($libelle, $debut, $fin);
+        FiscalYear::create($libelle, $debut, $fin, $enveloppeSaisie === '' ? '0' : $enveloppe);
 
         // Créé inactif volontairement : ouvrir un exercice et basculer
         // dessus sont deux décisions distinctes. On prépare souvent l'année
@@ -90,6 +104,45 @@ class FiscalYearController
         FiscalYear::activate($id);
 
         message_flash('succes', 'L\'exercice actif a été changé.');
+        rediriger('?page=exercices');
+    }
+
+    /**
+     * Met à jour l'enveloppe reçue de l'ISEN pour les clubs (requête POST).
+     *
+     * ⚠ MODIFIABLE APRÈS COUP, VOLONTAIREMENT.
+     *
+     * L'école annonce rarement le montant définitif à la rentrée : il est
+     * fréquent de démarrer l'année sur une estimation, puis de la corriger.
+     * Sans ce formulaire, l'écran des budgets afficherait un « reste à
+     * répartir » faux toute l'année, et il faudrait passer par phpMyAdmin.
+     *
+     * Aucune vérification de cohérence avec les budgets déjà alloués : le
+     * trésorier a le droit de saisir un montant inférieur à ce qu'il a déjà
+     * réparti — c'est précisément le genre de dépassement que l'écran des
+     * budgets doit rendre VISIBLE, pas empêcher d'enregistrer.
+     */
+    public function majEnveloppe(): void
+    {
+        exiger_bureau();
+        verifier_csrf();
+
+        $id      = (int) ($_POST['id'] ?? 0);
+        $montant = $this->normaliserMontant((string) ($_POST['enveloppe'] ?? ''));
+
+        if (FiscalYear::findById($id) === null) {
+            message_flash('erreur', 'Cet exercice n\'existe pas.');
+            rediriger('?page=exercices');
+        }
+
+        if (!$this->estUnMontant($montant)) {
+            message_flash('erreur', 'L\'enveloppe des clubs doit être un montant (ex. 12000 ou 12000,50).');
+            rediriger('?page=exercices');
+        }
+
+        FiscalYear::majEnveloppeClubs($id, $montant);
+
+        message_flash('succes', 'L\'enveloppe destinée aux clubs a été enregistrée.');
         rediriger('?page=exercices');
     }
 
@@ -140,5 +193,24 @@ class FiscalYearController
         $date = DateTime::createFromFormat('Y-m-d', $valeur);
 
         return $date !== false && $date->format('Y-m-d') === $valeur;
+    }
+
+    /**
+     * Prépare un montant saisi pour la base : « 12 000,50 » → « 12000.50 ».
+     *
+     * On accepte la notation française, mais MySQL attend un point décimal.
+     * Même règle que dans BudgetController, pour que les deux écrans se
+     * comportent pareil.
+     */
+    private function normaliserMontant(string $valeur): string
+    {
+        return str_replace(',', '.', trim($valeur));
+    }
+
+    private function estUnMontant(string $valeur): bool
+    {
+        // is_numeric() seul accepterait « 1e5 » : on impose une écriture
+        // décimale ordinaire, deux chiffres après la virgule au maximum.
+        return (bool) preg_match('/^\d{1,8}([.,]\d{1,2})?$/', $valeur);
     }
 }

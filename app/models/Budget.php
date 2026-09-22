@@ -50,6 +50,7 @@ class Budget
                 c.ClubID,
                 c.Name        AS ClubName,
                 c.IsActive    AS ClubIsActive,
+                c.IsBDE       AS ClubIsBDE,
 
                 -- Ce qui a été réellement versé au club
                 COALESCE((
@@ -104,6 +105,41 @@ class Budget
                      // tableau reste liée à $b et peut être écrasée plus tard
 
         return $budgets;
+    }
+
+    /**
+     * Sépare les budgets en deux groupes : le BDE d'un côté, les clubs de
+     * l'autre.
+     *
+     * ⚠ POURQUOI DEUX TABLEAUX PLUTÔT QU'UN SEUL TOTAL.
+     *
+     * Les deux montants ne sont pas de même nature. L'ISEN verse chaque
+     * année DEUX enveloppes distinctes :
+     *   - celle du BDE, qu'il encaisse et dépense, en 4 versements imposés
+     *     par la comptabilité de l'école ;
+     *   - celle destinée aux CLUBS, que le BDE reçoit puis répartit
+     *     librement entre eux.
+     *
+     * Les additionner donnerait un « total alloué » qui ne correspond à
+     * aucune réalité comptable, et masquerait la seule question qui compte
+     * pour la seconde : reste-t-il quelque chose à répartir ?
+     *
+     * @return array{bde:array<string,mixed>|null,clubs:array<int,array<string,mixed>>}
+     */
+    public static function separerBdeEtClubs(int $fiscalYearId): array
+    {
+        $bde   = null;
+        $clubs = [];
+
+        foreach (self::avecSoldes($fiscalYearId) as $budget) {
+            if ((int) $budget['ClubIsBDE'] === 1) {
+                $bde = $budget;
+            } else {
+                $clubs[] = $budget;
+            }
+        }
+
+        return ['bde' => $bde, 'clubs' => $clubs];
     }
 
     /**

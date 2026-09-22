@@ -35,6 +35,14 @@ require __DIR__ . '/../layout/header.php';
   saisies et le tableau de bord.
 </p>
 
+<p class="note">
+  <strong>Enveloppe clubs</strong> : la somme que l'ISEN verse au BDE
+  <em>pour les clubs</em>, et que le BDE répartit ensuite entre eux. Elle
+  est distincte de l'enveloppe propre du BDE, qui se saisit comme un budget
+  ordinaire dans <a href="<?= BASE_URL ?>/index.php?page=budgets">Budgets</a>.
+  C'est elle qui permet d'afficher ce qu'il reste à répartir.
+</p>
+
 <div class="tableau-conteneur">
   <table class="tableau">
     <thead>
@@ -42,13 +50,14 @@ require __DIR__ . '/../layout/header.php';
         <th>Exercice</th>
         <th>Début</th>
         <th>Fin</th>
+        <th>Enveloppe clubs</th>
         <th>État</th>
         <th></th>
       </tr>
     </thead>
     <tbody>
       <?php if ($exercices === []) : ?>
-        <tr><td colspan="5">Aucun exercice enregistré.</td></tr>
+        <tr><td colspan="6">Aucun exercice enregistré.</td></tr>
       <?php endif; ?>
 
       <?php foreach ($exercices as $e) : ?>
@@ -56,6 +65,29 @@ require __DIR__ . '/../layout/header.php';
           <td><?= htmlspecialchars($e['Year']) ?></td>
           <td><?= htmlspecialchars(date('d/m/Y', strtotime($e['Start_Date']))) ?></td>
           <td><?= htmlspecialchars(date('d/m/Y', strtotime($e['End_Date']))) ?></td>
+          <td>
+            <?php
+            /*
+             * Modifiable même sur un exercice clos : le montant définitif
+             * arrive parfois après la clôture, et on veut pouvoir corriger
+             * l'historique plutôt que de le laisser faux.
+             */
+            ?>
+            <form method="post" action="<?= BASE_URL ?>/index.php?page=exercice-enveloppe" class="form-tranche">
+              <?= champ_csrf() ?>
+              <input type="hidden" name="id" value="<?= (int) $e['FiscalYearID'] ?>">
+              <?php // Libellé invisible mais lu par les lecteurs d'écran :
+                    // sans lui, ce champ n'est qu'une case sans nom. ?>
+              <label class="sr-only" for="env-<?= (int) $e['FiscalYearID'] ?>">
+                Enveloppe clubs de l'exercice <?= htmlspecialchars($e['Year']) ?>
+              </label>
+              <input type="text" inputmode="decimal" class="mini" size="9"
+                     id="env-<?= (int) $e['FiscalYearID'] ?>" name="enveloppe"
+                     value="<?= htmlspecialchars(number_format((float) $e['Enveloppe_Clubs'], 2, ',', '')) ?>">
+              <span class="note">€</span>
+              <button type="submit" class="btn btn-petit">Enregistrer</button>
+            </form>
+          </td>
           <td>
             <?= (int) $e['IsActive'] === 1
                 ? '<strong>Actif</strong>'
@@ -112,6 +144,19 @@ require __DIR__ . '/../layout/header.php';
     <label for="fin">Date de fin</label>
     <input type="date" id="fin" name="fin" required
            value="<?= htmlspecialchars($saisie['fin']) ?>">
+
+    <?php
+    /*
+     * Volontairement FACULTATIF : l'ISEN annonce rarement le montant à la
+     * rentrée. Le rendre obligatoire empêcherait d'ouvrir l'exercice tant
+     * que l'école n'a pas répondu — alors que la saisie doit pouvoir
+     * commencer avant. Le chiffre se complète ensuite dans le tableau.
+     */
+    ?>
+    <label for="enveloppe">Enveloppe destinée aux clubs (facultatif)</label>
+    <input type="text" id="enveloppe" name="enveloppe" inputmode="decimal"
+           placeholder="12000"
+           value="<?= htmlspecialchars($saisie['enveloppe']) ?>">
 
     <button type="submit" class="btn">Créer l'exercice</button>
   </form>

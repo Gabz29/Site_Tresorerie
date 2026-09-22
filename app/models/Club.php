@@ -42,6 +42,27 @@ class Club
     }
 
     /**
+     * Les clubs actifs SAUF le BDE.
+     *
+     * Sert au filtre du tableau de bord : on y coche les clubs à observer,
+     * et le BDE n'a rien à y faire puisqu'il a son propre bouton. Il figure
+     * bien dans la table clubs — c'est ce qui lui permet d'avoir un budget
+     * et des transactions comme les autres — mais ce n'en est pas un, d'où
+     * la colonne IsBDE plutôt qu'un « c'est le ClubID 1 » sous-entendu.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function sansBde(): array
+    {
+        $sql = 'SELECT ClubID, Name
+                FROM clubs
+                WHERE IsActive = 1 AND IsBDE = 0
+                ORDER BY Name';
+
+        return db()->query($sql)->fetchAll();
+    }
+
+    /**
      * Renvoie un club par son identifiant, ou null s'il n'existe pas.
      *
      * ⚠ LE RÉFLEXE À PRENDRE DÈS MAINTENANT : requête PRÉPARÉE.
